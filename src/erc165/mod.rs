@@ -42,7 +42,7 @@ pub async fn supports_erc165(client: &ReadableClientHttp, contract_address: Addr
         address: contract_address,
         // equates to 0x01ffc9a7ffffffff00000000000000000000000000000000000000000000000000000000
         call: IERC165::supportsInterfaceCall {
-            interfaceID: [255, 255, 255, 255].into(),
+            interfaceID: [0xff, 0xff, 0xff, 0xff].into(),
         },
         block_number: None,
     };
