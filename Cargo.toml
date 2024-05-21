@@ -1,0 +1,25 @@
+[package]
+name = "rain-erc"
+version = "0.0.0"
+edition = "2021"
+description = "Provides utitlies for for identifying onchain contracts' interfaces"
+license = "CAL-1.0"
+repository = "https://github.com/rainlanguage/rain.erc"
+
+[dependencies]
+thiserror = "1.0.56"
+alloy-primitives = "0.6.3"
+alloy-sol-types = { version = "0.6.3", features = ["json"] }
+alloy-ethers-typecast = { git = "https://github.com/rainlanguage/alloy-ethers-typecast", rev = "a6bcb86b9b61a56d2440d33313f024297ce737bb" }
+
+[dev-dependencies]
+tokio = { version = "1.28.0", features = ["full"] }
+
+[lib]
+path = "src/lib.rs"
+
+[lints.clippy]
+all = "warn"
+
+[package.metadata.docs.rs]
+all-features = true
