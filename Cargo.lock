@@ -2626,6 +2626,7 @@ dependencies = [
  "alloy-ethers-typecast",
  "alloy-primitives",
  "alloy-sol-types",
+ "ethers",
  "thiserror",
  "tokio",
 ]

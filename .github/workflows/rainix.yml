@@ -3,7 +3,6 @@ on: [push]
 
 jobs:
   standard-tests:
-
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -25,7 +24,8 @@ jobs:
       - name: Rainix Rust Prelude
         run: nix develop -c rainix-rs-prelude
 
+      - name: Build Test Contracts
+        run: nix develop -c forge build
+
       - name: Run Command ${{ matrix.task }}
-        env:
-          TEST_POLYGON_RPC_URL: ${{ secrets.CI_DEPLOY_POLYGON_RPC_URL || vars.CI_DEPLOY_POLYGON_RPC_URL }}
         run: nix develop -c ${{ matrix.task }}

@@ -20,11 +20,8 @@ pub fn get_interface_id(selectors: &[[u8; 4]]) -> [u8; 4] {
     result.to_be_bytes()
 }
 
-/// checks if the given contract implements ERC165
-/// the process is done as described per ERC165 specs:
-///
-/// https://eips.ethereum.org/EIPS/eip-165#how-to-detect-if-a-contract-implements-erc-165
-pub async fn supports_erc165(client: &ReadableClientHttp, contract_address: Address) -> bool {
+/// the first check for checking if a contract supports erc165
+async fn supports_erc165_check1(client: &ReadableClientHttp, contract_address: Address) -> bool {
     let parameters = ReadContractParameters {
         address: contract_address,
         // equates to 0x01ffc9a701ffc9a700000000000000000000000000000000000000000000000000000000
@@ -33,11 +30,11 @@ pub async fn supports_erc165(client: &ReadableClientHttp, contract_address: Addr
         },
         block_number: None,
     };
-    let result = client.read(parameters).await.map(|v| v._0).unwrap_or(false);
-    if !result {
-        return false;
-    }
+    client.read(parameters).await.map(|v| v._0).unwrap_or(false)
+}
 
+/// the second check for checking if a contract supports erc165
+async fn supports_erc165_check2(client: &ReadableClientHttp, contract_address: Address) -> bool {
     let parameters = ReadContractParameters {
         address: contract_address,
         // equates to 0x01ffc9a7ffffffff00000000000000000000000000000000000000000000000000000000
@@ -49,10 +46,38 @@ pub async fn supports_erc165(client: &ReadableClientHttp, contract_address: Addr
     !client.read(parameters).await.map(|v| v._0).unwrap_or(true)
 }
 
+/// checks if the given contract implements ERC165
+/// the process is done as described per ERC165 specs:
+///
+/// https://eips.ethereum.org/EIPS/eip-165#how-to-detect-if-a-contract-implements-erc-165
+pub async fn supports_erc165(client: &ReadableClientHttp, contract_address: Address) -> bool {
+    let check1 = supports_erc165_check1(client, contract_address).await;
+    if !check1 {
+        return false;
+    }
+    // second check
+    supports_erc165_check2(client, contract_address).await
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use alloy_primitives::hex::FromHex;
+    use std::{sync::Arc, time::Duration};
+    use alloy_ethers_typecast::{ethers_address_to_alloy, transaction::ReadableClient};
+    use ethers::{
+        contract::abigen,
+        core::utils::Anvil,
+        middleware::SignerMiddleware,
+        providers::{Http, Provider},
+        signers::{LocalWallet, Signer},
+    };
+
+    abigen!(NonERC165, "test-contracts/out/NonERC165.sol/NonERC165.json");
+    abigen!(BadERC165, "test-contracts/out/BadERC165.sol/BadERC165.json");
+    abigen!(
+        ERC165Supported,
+        "test-contracts/out/ERC165Supported.sol/ERC165Supported.json"
+    );
 
     #[test]
     fn test_get_interface_id() {
@@ -67,20 +92,105 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_supports_erc165_check1() {
+        let anvil = Anvil::new().spawn();
+        let wallet: LocalWallet = anvil.keys()[0].clone().into();
+        let provider = Provider::<Http>::try_from(anvil.endpoint())
+            .expect("could not instantiate anvil provider")
+            .interval(Duration::from_millis(10u64));
+        let client =
+            SignerMiddleware::new(provider.clone(), wallet.with_chain_id(anvil.chain_id()));
+        let wallet_signer = Arc::new(client);
+        let read_client = ReadableClient::new(provider);
+
+        let contract = NonERC165::deploy(wallet_signer.clone(), ())
+            .unwrap()
+            .send()
+            .await
+            .unwrap();
+        let contract_address = ethers_address_to_alloy(contract.address());
+        assert!(!supports_erc165_check1(&read_client, contract_address).await);
+
+        let contract = BadERC165::deploy(wallet_signer.clone(), ())
+            .unwrap()
+            .send()
+            .await
+            .unwrap();
+        let contract_address = ethers_address_to_alloy(contract.address());
+        assert!(supports_erc165_check1(&read_client, contract_address).await);
+
+        let contract = ERC165Supported::deploy(wallet_signer.clone(), ())
+            .unwrap()
+            .send()
+            .await
+            .unwrap();
+        let contract_address = ethers_address_to_alloy(contract.address());
+        assert!(supports_erc165_check1(&read_client, contract_address).await);
+    }
+
+    #[tokio::test]
+    async fn test_supports_erc165_check2() {
+        let anvil = Anvil::new().spawn();
+        let wallet: LocalWallet = anvil.keys()[0].clone().into();
+        let provider = Provider::<Http>::try_from(anvil.endpoint())
+            .expect("could not instantiate anvil provider")
+            .interval(Duration::from_millis(10u64));
+        let client =
+            SignerMiddleware::new(provider.clone(), wallet.with_chain_id(anvil.chain_id()));
+        let wallet_signer = Arc::new(client);
+        let read_client = ReadableClient::new(provider);
+
+        let contract = ERC165Supported::deploy(wallet_signer.clone(), ())
+            .unwrap()
+            .send()
+            .await
+            .unwrap();
+        let contract_address = ethers_address_to_alloy(contract.address());
+        assert!(supports_erc165_check2(&read_client, contract_address).await);
+
+        let contract = BadERC165::deploy(wallet_signer.clone(), ())
+            .unwrap()
+            .send()
+            .await
+            .unwrap();
+        let contract_address = ethers_address_to_alloy(contract.address());
+        assert!(!supports_erc165_check2(&read_client, contract_address).await);
+    }
+
+    #[tokio::test]
     async fn test_supports_erc165() {
-        let non_erc165_contract =
-            Address::from_hex("7ceB23fD6bC0adD59E62ac25578270cFf1b9f619").unwrap();
-        let erc165_supported_contract =
-            Address::from_hex("9a8545FA798A7be7F8E1B8DaDD79c9206357C015").unwrap();
+        let anvil = Anvil::new().spawn();
+        let wallet: LocalWallet = anvil.keys()[0].clone().into();
+        let provider = Provider::<Http>::try_from(anvil.endpoint())
+            .expect("could not instantiate anvil provider")
+            .interval(Duration::from_millis(10u64));
+        let client =
+            SignerMiddleware::new(provider.clone(), wallet.with_chain_id(anvil.chain_id()));
+        let wallet_signer = Arc::new(client);
+        let read_client = ReadableClient::new(provider);
 
-        let rpc_url =
-            std::env::var("TEST_POLYGON_RPC_URL").expect("'TEST_POLYGON_RPC_URL' is undefined");
-        let client = ReadableClientHttp::new_from_url(rpc_url.to_string()).unwrap();
+        let contract = NonERC165::deploy(wallet_signer.clone(), ())
+            .unwrap()
+            .send()
+            .await
+            .unwrap();
+        let contract_address = ethers_address_to_alloy(contract.address());
+        assert!(!supports_erc165(&read_client, contract_address).await);
 
-        let result = supports_erc165(&client, non_erc165_contract).await;
-        assert!(!result);
+        let contract = BadERC165::deploy(wallet_signer.clone(), ())
+            .unwrap()
+            .send()
+            .await
+            .unwrap();
+        let contract_address = ethers_address_to_alloy(contract.address());
+        assert!(!supports_erc165(&read_client, contract_address).await);
 
-        let result = supports_erc165(&client, erc165_supported_contract).await;
-        assert!(result);
+        let contract = ERC165Supported::deploy(wallet_signer.clone(), ())
+            .unwrap()
+            .send()
+            .await
+            .unwrap();
+        let contract_address = ethers_address_to_alloy(contract.address());
+        assert!(supports_erc165(&read_client, contract_address).await);
     }
 }
