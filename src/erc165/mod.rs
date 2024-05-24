@@ -115,26 +115,26 @@ mod tests {
         let read_client = ReadableClient::new(provider);
 
         let contract = NonERC165::deploy(wallet_signer.clone(), ())
-            .unwrap()
+            .expect("failed to deploy NonERC165 test contract")
             .send()
             .await
-            .unwrap();
+            .expect("failed to deploy NonERC165 test contract");
         let contract_address = ethers_address_to_alloy(contract.address());
         assert!(!supports_erc165_check1(&read_client, contract_address).await);
 
         let contract = BadERC165::deploy(wallet_signer.clone(), ())
-            .unwrap()
+            .expect("failed to deploy BadERC165 test contract")
             .send()
             .await
-            .unwrap();
+            .expect("failed to deploy BadERC165 test contract");
         let contract_address = ethers_address_to_alloy(contract.address());
         assert!(supports_erc165_check1(&read_client, contract_address).await);
 
         let contract = ERC165Supported::deploy(wallet_signer.clone(), ())
-            .unwrap()
+            .expect("failed to deploy ERC165Supported test contract")
             .send()
             .await
-            .unwrap();
+            .expect("failed to deploy ERC165Supported test contract");
         let contract_address = ethers_address_to_alloy(contract.address());
         assert!(supports_erc165_check1(&read_client, contract_address).await);
     }
@@ -152,18 +152,18 @@ mod tests {
         let read_client = ReadableClient::new(provider);
 
         let contract = ERC165Supported::deploy(wallet_signer.clone(), ())
-            .unwrap()
+            .expect("failed to deploy ERC165Supported test contract")
             .send()
             .await
-            .unwrap();
+            .expect("failed to deploy ERC165Supported test contract");
         let contract_address = ethers_address_to_alloy(contract.address());
         assert!(supports_erc165_check2(&read_client, contract_address).await);
 
         let contract = BadERC165::deploy(wallet_signer.clone(), ())
-            .unwrap()
+            .expect("failed to deploy BadERC165 test contract")
             .send()
             .await
-            .unwrap();
+            .expect("failed to deploy BadERC165 test contract");
         let contract_address = ethers_address_to_alloy(contract.address());
         assert!(!supports_erc165_check2(&read_client, contract_address).await);
     }
@@ -181,26 +181,26 @@ mod tests {
         let read_client = ReadableClient::new(provider);
 
         let contract = NonERC165::deploy(wallet_signer.clone(), ())
-            .unwrap()
+            .expect("failed to deploy NonERC165 test contract")
             .send()
             .await
-            .unwrap();
+            .expect("failed to deploy NonERC165 test contract");
         let contract_address = ethers_address_to_alloy(contract.address());
         assert!(!supports_erc165(&read_client, contract_address).await);
 
         let contract = BadERC165::deploy(wallet_signer.clone(), ())
-            .unwrap()
+            .expect("failed to deploy BadERC165 test contract")
             .send()
             .await
-            .unwrap();
+            .expect("failed to deploy BadERC165 test contract");
         let contract_address = ethers_address_to_alloy(contract.address());
         assert!(!supports_erc165(&read_client, contract_address).await);
 
         let contract = ERC165Supported::deploy(wallet_signer.clone(), ())
-            .unwrap()
+            .expect("failed to deploy ERC165Supported test contract")
             .send()
             .await
-            .unwrap();
+            .expect("failed to deploy ERC165Supported test contract");
         let contract_address = ethers_address_to_alloy(contract.address());
         assert!(supports_erc165(&read_client, contract_address).await);
     }
