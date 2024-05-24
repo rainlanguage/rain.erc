@@ -88,9 +88,16 @@ mod tests {
 
     #[test]
     fn test_get_interface_id() {
-        let selectors = vec![[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12]];
+        let selectors = vec![
+            //[1     2       3       4]
+            [0b0001, 0b0010, 0b0011, 0b0100],
+            //[5     6       7       8]
+            [0b0101, 0b0110, 0b0111, 0b1000],
+            //[9     10      11      12]
+            [0b1001, 0b1010, 0b1011, 0b1100],
+        ];
         let result = get_interface_id(&selectors);
-        let expected: [u8; 4] = [13, 14, 15, 0];
+        let expected: [u8; 4] = [0b1101, 0b1110, 0b1111, 0b0000]; // [13 14 15 0]
         assert_eq!(result, expected);
 
         let result = get_interface_id(IERC165::IERC165Calls::SELECTORS);
