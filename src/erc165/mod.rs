@@ -72,6 +72,13 @@ mod tests {
         signers::{LocalWallet, Signer},
     };
 
+    sol! {
+        interface ITest {
+            function externalFn1() external pure returns (bool);
+            function externalFn2(uint256 val1, uint256 val2) external returns (uint256, bool);
+            function externalFn3(address add) external returns (address);
+        }
+    }
     abigen!(NonERC165, "test-contracts/out/NonERC165.sol/NonERC165.json");
     abigen!(BadERC165, "test-contracts/out/BadERC165.sol/BadERC165.json");
     abigen!(
@@ -88,6 +95,10 @@ mod tests {
 
         let result = get_interface_id(IERC165::IERC165Calls::SELECTORS);
         let expected: [u8; 4] = 0x01ffc9a7u32.to_be_bytes(); // known IERC165 interface id
+        assert_eq!(result, expected);
+
+        let result = get_interface_id(ITest::ITestCalls::SELECTORS);
+        let expected: [u8; 4] = 0x3dcd3fedu32.to_be_bytes(); // known ITest interface id
         assert_eq!(result, expected);
     }
 
