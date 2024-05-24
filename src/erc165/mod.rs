@@ -5,9 +5,9 @@ use alloy_ethers_typecast::transaction::{ReadContractParameters, ReadableClientH
 // IERC165 contract alloy bindings
 sol!("lib/forge-std/src/interfaces/IERC165.sol");
 
-/// get interface id from the given array of selectors the array of selectors
+/// get interface id from the given array of selectors, the array of selectors
 /// should include all the functions (and only function) selectors of the
-/// contract, in alloy and using its contract bindings, the functions selectors
+/// interface, in alloy and using its sol! macro bindings, the functions selectors
 /// can be accessed through: `{AlloyContractName}::{AlloyContractNameCalls}::SELECTORS``
 ///
 /// related info can be found here:
