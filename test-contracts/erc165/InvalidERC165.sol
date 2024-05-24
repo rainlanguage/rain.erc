@@ -2,7 +2,7 @@
 pragma solidity >=0.6.0;
 
 /// A contract that doesnt implement erc165, but has supportsInterface method
-contract BadERC165 {
+contract InvalidERC165 {
     function externalFn() external pure returns (bool) {
         return internalFn(true);
     }

@@ -70,8 +70,8 @@ mod tests {
     use ethers::{
         contract::abigen,
         core::utils::Anvil,
-        middleware::SignerMiddleware,
         providers::{Http, Provider},
+        middleware::SignerMiddleware,
         signers::{LocalWallet, Signer},
     };
 
@@ -84,7 +84,10 @@ mod tests {
         }
     }
     abigen!(NonERC165, "test-contracts/out/NonERC165.sol/NonERC165.json");
-    abigen!(BadERC165, "test-contracts/out/BadERC165.sol/BadERC165.json");
+    abigen!(
+        InvalidERC165,
+        "test-contracts/out/InvalidERC165.sol/InvalidERC165.json"
+    );
     abigen!(
         ERC165Supported,
         "test-contracts/out/ERC165Supported.sol/ERC165Supported.json"
@@ -137,11 +140,11 @@ mod tests {
         let contract_address = ethers_address_to_alloy(contract.address());
         assert!(!supports_erc165_check1(&client, contract_address).await);
 
-        let contract = BadERC165::deploy(wallet_signer.clone(), ())
-            .expect("failed to deploy BadERC165 test contract")
+        let contract = InvalidERC165::deploy(wallet_signer.clone(), ())
+            .expect("failed to deploy InvalidERC165 test contract")
             .send()
             .await
-            .expect("failed to deploy BadERC165 test contract");
+            .expect("failed to deploy InvalidERC165 test contract");
         let contract_address = ethers_address_to_alloy(contract.address());
         assert!(supports_erc165_check1(&client, contract_address).await);
 
@@ -175,11 +178,11 @@ mod tests {
         let contract_address = ethers_address_to_alloy(contract.address());
         assert!(supports_erc165_check2(&client, contract_address).await);
 
-        let contract = BadERC165::deploy(wallet_signer.clone(), ())
-            .expect("failed to deploy BadERC165 test contract")
+        let contract = InvalidERC165::deploy(wallet_signer.clone(), ())
+            .expect("failed to deploy InvalidERC165 test contract")
             .send()
             .await
-            .expect("failed to deploy BadERC165 test contract");
+            .expect("failed to deploy InvalidERC165 test contract");
         let contract_address = ethers_address_to_alloy(contract.address());
         assert!(!supports_erc165_check2(&client, contract_address).await);
     }
@@ -205,11 +208,11 @@ mod tests {
         let contract_address = ethers_address_to_alloy(contract.address());
         assert!(!supports_erc165(&client, contract_address).await);
 
-        let contract = BadERC165::deploy(wallet_signer.clone(), ())
-            .expect("failed to deploy BadERC165 test contract")
+        let contract = InvalidERC165::deploy(wallet_signer.clone(), ())
+            .expect("failed to deploy InvalidERC165 test contract")
             .send()
             .await
-            .expect("failed to deploy BadERC165 test contract");
+            .expect("failed to deploy InvalidERC165 test contract");
         let contract_address = ethers_address_to_alloy(contract.address());
         assert!(!supports_erc165(&client, contract_address).await);
 
