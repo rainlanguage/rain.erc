@@ -13,6 +13,9 @@ sol!("lib/forge-std/src/interfaces/IERC165.sol");
 /// related info can be found here:
 /// https://eips.ethereum.org/EIPS/eip-165#how-interfaces-are-identified
 pub fn get_interface_id(selectors: &[[u8; 4]]) -> [u8; 4] {
+    if selectors.is_empty() {
+        panic!("no selectors")
+    }
     let mut result = u32::from_be_bytes(selectors[0]);
     for selector in &selectors[1..] {
         result ^= u32::from_be_bytes(*selector);
