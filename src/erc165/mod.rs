@@ -119,10 +119,11 @@ mod tests {
         let provider = Provider::<Http>::try_from(anvil.endpoint())
             .expect("could not instantiate anvil provider")
             .interval(Duration::from_millis(10u64));
-        let client =
+        let ethers_client =
             SignerMiddleware::new(provider.clone(), wallet.with_chain_id(anvil.chain_id()));
-        let wallet_signer = Arc::new(client);
-        let read_client = ReadableClient::new(provider);
+
+        let wallet_signer = Arc::new(ethers_client);
+        let client = ReadableClient::new(provider);
 
         let contract = NonERC165::deploy(wallet_signer.clone(), ())
             .expect("failed to deploy NonERC165 test contract")
@@ -130,7 +131,7 @@ mod tests {
             .await
             .expect("failed to deploy NonERC165 test contract");
         let contract_address = ethers_address_to_alloy(contract.address());
-        assert!(!supports_erc165_check1(&read_client, contract_address).await);
+        assert!(!supports_erc165_check1(&client, contract_address).await);
 
         let contract = BadERC165::deploy(wallet_signer.clone(), ())
             .expect("failed to deploy BadERC165 test contract")
@@ -138,7 +139,7 @@ mod tests {
             .await
             .expect("failed to deploy BadERC165 test contract");
         let contract_address = ethers_address_to_alloy(contract.address());
-        assert!(supports_erc165_check1(&read_client, contract_address).await);
+        assert!(supports_erc165_check1(&client, contract_address).await);
 
         let contract = ERC165Supported::deploy(wallet_signer.clone(), ())
             .expect("failed to deploy ERC165Supported test contract")
@@ -146,7 +147,7 @@ mod tests {
             .await
             .expect("failed to deploy ERC165Supported test contract");
         let contract_address = ethers_address_to_alloy(contract.address());
-        assert!(supports_erc165_check1(&read_client, contract_address).await);
+        assert!(supports_erc165_check1(&client, contract_address).await);
     }
 
     #[tokio::test]
@@ -156,10 +157,11 @@ mod tests {
         let provider = Provider::<Http>::try_from(anvil.endpoint())
             .expect("could not instantiate anvil provider")
             .interval(Duration::from_millis(10u64));
-        let client =
+        let etheres_client =
             SignerMiddleware::new(provider.clone(), wallet.with_chain_id(anvil.chain_id()));
-        let wallet_signer = Arc::new(client);
-        let read_client = ReadableClient::new(provider);
+
+        let wallet_signer = Arc::new(etheres_client);
+        let client = ReadableClient::new(provider);
 
         let contract = ERC165Supported::deploy(wallet_signer.clone(), ())
             .expect("failed to deploy ERC165Supported test contract")
@@ -167,7 +169,7 @@ mod tests {
             .await
             .expect("failed to deploy ERC165Supported test contract");
         let contract_address = ethers_address_to_alloy(contract.address());
-        assert!(supports_erc165_check2(&read_client, contract_address).await);
+        assert!(supports_erc165_check2(&client, contract_address).await);
 
         let contract = BadERC165::deploy(wallet_signer.clone(), ())
             .expect("failed to deploy BadERC165 test contract")
@@ -175,7 +177,7 @@ mod tests {
             .await
             .expect("failed to deploy BadERC165 test contract");
         let contract_address = ethers_address_to_alloy(contract.address());
-        assert!(!supports_erc165_check2(&read_client, contract_address).await);
+        assert!(!supports_erc165_check2(&client, contract_address).await);
     }
 
     #[tokio::test]
@@ -185,10 +187,11 @@ mod tests {
         let provider = Provider::<Http>::try_from(anvil.endpoint())
             .expect("could not instantiate anvil provider")
             .interval(Duration::from_millis(10u64));
-        let client =
+        let ethers_client =
             SignerMiddleware::new(provider.clone(), wallet.with_chain_id(anvil.chain_id()));
-        let wallet_signer = Arc::new(client);
-        let read_client = ReadableClient::new(provider);
+
+        let wallet_signer = Arc::new(ethers_client);
+        let client = ReadableClient::new(provider);
 
         let contract = NonERC165::deploy(wallet_signer.clone(), ())
             .expect("failed to deploy NonERC165 test contract")
@@ -196,7 +199,7 @@ mod tests {
             .await
             .expect("failed to deploy NonERC165 test contract");
         let contract_address = ethers_address_to_alloy(contract.address());
-        assert!(!supports_erc165(&read_client, contract_address).await);
+        assert!(!supports_erc165(&client, contract_address).await);
 
         let contract = BadERC165::deploy(wallet_signer.clone(), ())
             .expect("failed to deploy BadERC165 test contract")
@@ -204,7 +207,7 @@ mod tests {
             .await
             .expect("failed to deploy BadERC165 test contract");
         let contract_address = ethers_address_to_alloy(contract.address());
-        assert!(!supports_erc165(&read_client, contract_address).await);
+        assert!(!supports_erc165(&client, contract_address).await);
 
         let contract = ERC165Supported::deploy(wallet_signer.clone(), ())
             .expect("failed to deploy ERC165Supported test contract")
@@ -212,6 +215,6 @@ mod tests {
             .await
             .expect("failed to deploy ERC165Supported test contract");
         let contract_address = ethers_address_to_alloy(contract.address());
-        assert!(supports_erc165(&read_client, contract_address).await);
+        assert!(supports_erc165(&client, contract_address).await);
     }
 }
