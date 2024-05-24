@@ -75,6 +75,7 @@ mod tests {
         signers::{LocalWallet, Signer},
     };
 
+    // test contracts bindings
     sol! {
         interface ITest {
             function externalFn1() external pure returns (bool);
@@ -114,6 +115,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_supports_erc165_check1() {
+        // setup local evm and ethers rpc provider
         let anvil = Anvil::new().spawn();
         let wallet: LocalWallet = anvil.keys()[0].clone().into();
         let provider = Provider::<Http>::try_from(anvil.endpoint())
@@ -122,9 +124,11 @@ mod tests {
         let ethers_client =
             SignerMiddleware::new(provider.clone(), wallet.with_chain_id(anvil.chain_id()));
 
+        // ethers wallet signer for deploying and alloy_ethers_typecast::ReadableClient
         let wallet_signer = Arc::new(ethers_client);
         let client = ReadableClient::new(provider);
 
+        // deploy the contract
         let contract = NonERC165::deploy(wallet_signer.clone(), ())
             .expect("failed to deploy NonERC165 test contract")
             .send()
