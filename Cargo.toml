@@ -2,7 +2,7 @@
 name = "rain-erc"
 version = "0.0.0"
 edition = "2021"
-description = "Provides utitlies for for identifying onchain contracts' interfaces"
+description = "Provides ERC related utitlies in rust"
 license = "CAL-1.0"
 repository = "https://github.com/rainlanguage/rain.erc"
 
