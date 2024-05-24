@@ -2,4 +2,4 @@
 src = 'test-contracts'
 out = 'test-contracts/out'
 
-solc = "0.8.19"
+solc = "0.8.25"

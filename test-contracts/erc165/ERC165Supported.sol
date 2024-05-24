@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: CAL
-pragma solidity >=0.6.0;
+pragma solidity =0.8.25;
 
 import {IERC165} from "../../lib/forge-std/src/interfaces/IERC165.sol";
 
