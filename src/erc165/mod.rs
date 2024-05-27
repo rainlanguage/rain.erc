@@ -61,15 +61,8 @@ pub async fn supports_erc165(client: &ReadableClientHttp, contract_address: Addr
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::{sync::Arc, time::Duration};
-    use alloy_ethers_typecast::{ethers_address_to_alloy, transaction::ReadableClient};
-    use ethers::{
-        contract::abigen,
-        core::utils::Anvil,
-        providers::{Http, Provider},
-        middleware::SignerMiddleware,
-        signers::{LocalWallet, Signer},
-    };
+    use httpmock::{Method::POST, MockServer};
+    use alloy_ethers_typecast::transaction::ReadableClient;
 
     // test contracts bindings
     sol! {
@@ -79,15 +72,6 @@ mod tests {
             function externalFn3(address add) external returns (address);
         }
     }
-    abigen!(NonERC165, "test-contracts/out/NonERC165.sol/NonERC165.json");
-    abigen!(
-        InvalidERC165,
-        "test-contracts/out/InvalidERC165.sol/InvalidERC165.json"
-    );
-    abigen!(
-        ERC165Supported,
-        "test-contracts/out/ERC165Supported.sol/ERC165Supported.json"
-    );
 
     #[test]
     fn test_get_interface_id() {
@@ -114,106 +98,284 @@ mod tests {
 
     #[tokio::test]
     async fn test_supports_erc165_check1() {
-        // setup local evm and ethers rpc provider
-        let anvil = Anvil::new().spawn();
-        let wallet: LocalWallet = anvil.keys()[0].clone().into();
-        let provider = Provider::<Http>::try_from(anvil.endpoint())
-            .expect("could not instantiate anvil provider")
-            .interval(Duration::from_millis(10u64));
-        let ethers_client =
-            SignerMiddleware::new(provider.clone(), wallet.with_chain_id(anvil.chain_id()));
+        let rpc_server = MockServer::start_async().await;
+        let rpc_url = rpc_server.url("/");
+        let client = ReadableClient::new_from_url(rpc_url.clone()).unwrap();
 
-        // ethers wallet signer for deploying and alloy_ethers_typecast::ReadableClient
-        let wallet_signer = Arc::new(ethers_client);
-        let client = ReadableClient::new(provider);
+        // Mock a successful response, true
+        let address = Address::random();
+        rpc_server.mock(|when, then| {
+            when.method(POST).path("/").json_body_partial(
+                format!(r#"{{
+                    "params": [
+                        {{
+                            "accessList": [],
+                            "to": "{}",
+                            "data": "0x01ffc9a701ffc9a700000000000000000000000000000000000000000000000000000000"
+                        }},
+                        "latest"
+                    ]
+                }}"#, address.to_string().to_ascii_lowercase())
+            );
+            then.status(200).json_body_obj(&{
+                serde_json::json!({
+                    "jsonrpc": "2.0",
+                    "id": 1,
+                    "result": "0x0000000000000000000000000000000000000000000000000000000000000001"
+                })
+            });
+        });
+        let result = supports_erc165_check1(&client, address).await;
+        assert!(result);
 
-        // deploy the contract
-        let contract = NonERC165::deploy(wallet_signer.clone(), ())
-            .expect("failed to deploy NonERC165 test contract")
-            .send()
-            .await
-            .expect("failed to deploy NonERC165 test contract");
-        assert!(
-            !supports_erc165_check1(&client, ethers_address_to_alloy(contract.address())).await
-        );
+        // Mock a successful response, false
+        let address = Address::random();
+        rpc_server.mock(|when, then| {
+            when.method(POST).path("/").json_body_partial(
+                format!(r#"{{
+                    "params": [
+                        {{
+                            "accessList": [],
+                            "to": "{}",
+                            "data": "0x01ffc9a701ffc9a700000000000000000000000000000000000000000000000000000000"
+                        }},
+                        "latest"
+                    ]
+                }}"#, address.to_string().to_ascii_lowercase())
+            );
+            then.status(200).json_body_obj(&{
+                serde_json::json!({
+                    "jsonrpc": "2.0",
+                    "id": 1,
+                    "result": "0x0000000000000000000000000000000000000000000000000000000000000000"
+                })
+            });
+        });
+        let result = supports_erc165_check1(&client, address).await;
+        assert!(!result);
 
-        let contract = InvalidERC165::deploy(wallet_signer.clone(), ())
-            .expect("failed to deploy InvalidERC165 test contract")
-            .send()
-            .await
-            .expect("failed to deploy InvalidERC165 test contract");
-        assert!(supports_erc165_check1(&client, ethers_address_to_alloy(contract.address())).await);
-
-        let contract = ERC165Supported::deploy(wallet_signer.clone(), ())
-            .expect("failed to deploy ERC165Supported test contract")
-            .send()
-            .await
-            .expect("failed to deploy ERC165Supported test contract");
-        assert!(supports_erc165_check1(&client, ethers_address_to_alloy(contract.address())).await);
+        // Mock a revert response
+        let address = Address::random();
+        rpc_server.mock(|when, then| {
+            when.method(POST).path("/").json_body_partial(
+                format!(r#"{{
+                    "params": [
+                        {{
+                            "accessList": [],
+                            "to": "{}",
+                            "data": "0x01ffc9a701ffc9a700000000000000000000000000000000000000000000000000000000"
+                        }},
+                        "latest"
+                    ]
+                }}"#, address.to_string().to_ascii_lowercase())
+            );
+            then.status(200).json_body_obj(&{
+                serde_json::json!({
+                    "jsonrpc": "2.0",
+                    "id": 1,
+                    "error": {
+                        "code": -32003,
+                        "data": "0x00",
+                        "message": "execution reverted"
+                    }
+                })
+            });
+        });
+        let result = supports_erc165_check1(&client, address).await;
+        assert!(!result);
     }
 
     #[tokio::test]
     async fn test_supports_erc165_check2() {
-        let anvil = Anvil::new().spawn();
-        let wallet: LocalWallet = anvil.keys()[0].clone().into();
-        let provider = Provider::<Http>::try_from(anvil.endpoint())
-            .expect("could not instantiate anvil provider")
-            .interval(Duration::from_millis(10u64));
-        let etheres_client =
-            SignerMiddleware::new(provider.clone(), wallet.with_chain_id(anvil.chain_id()));
+        let rpc_server = MockServer::start_async().await;
+        let rpc_url = rpc_server.url("/");
+        let client = ReadableClient::new_from_url(rpc_url.clone()).unwrap();
 
-        let wallet_signer = Arc::new(etheres_client);
-        let client = ReadableClient::new(provider);
+        // Mock a successful response, false
+        let address = Address::random();
+        rpc_server.mock(|when, then| {
+            when.method(POST).path("/").json_body_partial(
+                format!(r#"{{
+                    "params": [
+                        {{
+                            "accessList": [],
+                            "to": "{}",
+                            "data": "0x01ffc9a7ffffffff00000000000000000000000000000000000000000000000000000000"
+                        }},
+                        "latest"
+                    ]
+                }}"#, address.to_string().to_ascii_lowercase())
+            );
+            then.status(200).json_body_obj(&{
+                serde_json::json!({
+                    "jsonrpc": "2.0",
+                    "id": 1,
+                    "result": "0x0000000000000000000000000000000000000000000000000000000000000000"
+                })
+            });
+        });
+        let result = supports_erc165_check2(&client, address).await;
+        assert!(result);
 
-        let contract = ERC165Supported::deploy(wallet_signer.clone(), ())
-            .expect("failed to deploy ERC165Supported test contract")
-            .send()
-            .await
-            .expect("failed to deploy ERC165Supported test contract");
-        assert!(supports_erc165_check2(&client, ethers_address_to_alloy(contract.address())).await);
+        // Mock a successful response, true
+        let address = Address::random();
+        rpc_server.mock(|when, then| {
+            when.method(POST).path("/").json_body_partial(
+                format!(r#"{{
+                    "params": [
+                        {{
+                            "accessList": [],
+                            "to": "{}",
+                            "data": "0x01ffc9a7ffffffff00000000000000000000000000000000000000000000000000000000"
+                        }},
+                        "latest"
+                    ]
+                }}"#, address.to_string().to_ascii_lowercase())
+            );
+            then.status(200).json_body_obj(&{
+                serde_json::json!({
+                    "jsonrpc": "2.0",
+                    "id": 1,
+                    "result": "0x0000000000000000000000000000000000000000000000000000000000000001"
+                })
+            });
+        });
+        let result = supports_erc165_check2(&client, address).await;
+        assert!(!result);
 
-        let contract = InvalidERC165::deploy(wallet_signer.clone(), ())
-            .expect("failed to deploy InvalidERC165 test contract")
-            .send()
-            .await
-            .expect("failed to deploy InvalidERC165 test contract");
-        assert!(
-            !supports_erc165_check2(&client, ethers_address_to_alloy(contract.address())).await
-        );
+        // Mock a revert response
+        let address = Address::random();
+        rpc_server.mock(|when, then| {
+            when.method(POST).path("/").json_body_partial(
+                format!(r#"{{
+                    "params": [
+                        {{
+                            "accessList": [],
+                            "to": "{}",
+                            "data": "0x01ffc9a7ffffffff00000000000000000000000000000000000000000000000000000000"
+                        }},
+                        "latest"
+                    ]
+                }}"#, address.to_string().to_ascii_lowercase())
+            );
+            then.status(200).json_body_obj(&{
+                serde_json::json!({
+                    "jsonrpc": "2.0",
+                    "id": 1,
+                    "error": {
+                        "code": -32003,
+                        "data": "0x00",
+                        "message": "execution reverted"
+                    }
+                })
+            });
+        });
+        let result = supports_erc165_check2(&client, address).await;
+        assert!(!result);
     }
 
     #[tokio::test]
     async fn test_supports_erc165() {
-        let anvil = Anvil::new().spawn();
-        let wallet: LocalWallet = anvil.keys()[0].clone().into();
-        let provider = Provider::<Http>::try_from(anvil.endpoint())
-            .expect("could not instantiate anvil provider")
-            .interval(Duration::from_millis(10u64));
-        let ethers_client =
-            SignerMiddleware::new(provider.clone(), wallet.with_chain_id(anvil.chain_id()));
+        let rpc_server = MockServer::start_async().await;
+        let rpc_url = rpc_server.url("/");
+        let client = ReadableClient::new_from_url(rpc_url.clone()).unwrap();
 
-        let wallet_signer = Arc::new(ethers_client);
-        let client = ReadableClient::new(provider);
+        // Mock a successful response
+        let address = Address::random();
+        rpc_server.mock(|when, then| {
+            when.method(POST).path("/").json_body_partial(
+                format!(r#"{{
+                    "params": [
+                        {{
+                            "accessList": [],
+                            "to": "{}",
+                            "data": "0x01ffc9a701ffc9a700000000000000000000000000000000000000000000000000000000"
+                        }},
+                        "latest"
+                    ]
+                }}"#, address.to_string().to_ascii_lowercase())
+            );
+            then.status(200).json_body_obj(&{
+                serde_json::json!({
+                    "jsonrpc": "2.0",
+                    "id": 1,
+                    "result": "0x0000000000000000000000000000000000000000000000000000000000000001"
+                })
+            });
+        });
+        rpc_server.mock(|when, then| {
+            when.method(POST).path("/").json_body_partial(
+                format!(r#"{{
+                    "params": [
+                        {{
+                            "accessList": [],
+                            "to": "{}",
+                            "data": "0x01ffc9a7ffffffff00000000000000000000000000000000000000000000000000000000"
+                        }},
+                        "latest"
+                    ]
+                }}"#, address.to_string().to_ascii_lowercase())
+            );
+            then.status(200).json_body_obj(&{
+                serde_json::json!({
+                    "jsonrpc": "2.0",
+                    "id": 1,
+                    "result": "0x0000000000000000000000000000000000000000000000000000000000000000"
+                })
+            });
+        });
+        let result = supports_erc165(&client, address).await;
+        assert!(result);
 
-        let contract = NonERC165::deploy(wallet_signer.clone(), ())
-            .expect("failed to deploy NonERC165 test contract")
-            .send()
-            .await
-            .expect("failed to deploy NonERC165 test contract");
-        assert!(!supports_erc165(&client, ethers_address_to_alloy(contract.address())).await);
-
-        let contract = InvalidERC165::deploy(wallet_signer.clone(), ())
-            .expect("failed to deploy InvalidERC165 test contract")
-            .send()
-            .await
-            .expect("failed to deploy InvalidERC165 test contract");
-        assert!(!supports_erc165(&client, ethers_address_to_alloy(contract.address())).await);
-
-        let contract = ERC165Supported::deploy(wallet_signer.clone(), ())
-            .expect("failed to deploy ERC165Supported test contract")
-            .send()
-            .await
-            .expect("failed to deploy ERC165Supported test contract");
-        assert!(supports_erc165(&client, ethers_address_to_alloy(contract.address())).await);
+        // Mock an unsuccessful response
+        let address = Address::random();
+        rpc_server.mock(|when, then| {
+            when.method(POST).path("/").json_body_partial(
+                format!(r#"{{
+                    "params": [
+                        {{
+                            "accessList": [],
+                            "to": "{}",
+                            "data": "0x01ffc9a701ffc9a700000000000000000000000000000000000000000000000000000000"
+                        }},
+                        "latest"
+                    ]
+                }}"#, address.to_string().to_ascii_lowercase())
+            );
+            then.status(200).json_body_obj(&{
+                serde_json::json!({
+                    "jsonrpc": "2.0",
+                    "id": 1,
+                    "result": "0x0000000000000000000000000000000000000000000000000000000000000001"
+                })
+            });
+        });
+        rpc_server.mock(|when, then| {
+            when.method(POST).path("/").json_body_partial(
+                format!(r#"{{
+                    "params": [
+                        {{
+                            "accessList": [],
+                            "to": "{}",
+                            "data": "0x01ffc9a7ffffffff00000000000000000000000000000000000000000000000000000000"
+                        }},
+                        "latest"
+                    ]
+                }}"#, address.to_string().to_ascii_lowercase())
+            );
+            then.status(200).json_body_obj(&{
+                serde_json::json!({
+                    "jsonrpc": "2.0",
+                    "id": 1,
+                    "error": {
+                        "code": -32003,
+                        "data": "0x00",
+                        "message": "execution reverted"
+                    }
+                })
+            });
+        });
+        let result = supports_erc165(&client, address).await;
+        assert!(!result);
     }
 }

@@ -14,7 +14,8 @@ alloy-ethers-typecast = { git = "https://github.com/rainlanguage/alloy-ethers-ty
 
 [dev-dependencies]
 tokio = { version = "1.28.0", features = ["full"] }
-ethers = { version = "2.0.14" }
+httpmock = "0.7.0"
+serde_json = "1.0.117"
 
 [lib]
 path = "src/lib.rs"
