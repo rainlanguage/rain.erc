@@ -107,6 +107,8 @@ mod tests {
         rpc_server.mock(|when, then| {
             when.method(POST).path("/").json_body_partial(
                 format!(r#"{{
+                    "jsonrpc": "2.0",
+                    "method": "eth_call",
                     "params": [
                         {{
                             "accessList": [],
@@ -117,7 +119,7 @@ mod tests {
                     ]
                 }}"#, address.to_string().to_ascii_lowercase())
             );
-            then.status(200).json_body_obj(&{
+            then.json_body_obj(&{
                 serde_json::json!({
                     "jsonrpc": "2.0",
                     "id": 1,
@@ -133,6 +135,8 @@ mod tests {
         rpc_server.mock(|when, then| {
             when.method(POST).path("/").json_body_partial(
                 format!(r#"{{
+                    "jsonrpc": "2.0",
+                    "method": "eth_call",
                     "params": [
                         {{
                             "accessList": [],
@@ -143,7 +147,7 @@ mod tests {
                     ]
                 }}"#, address.to_string().to_ascii_lowercase())
             );
-            then.status(200).json_body_obj(&{
+            then.json_body_obj(&{
                 serde_json::json!({
                     "jsonrpc": "2.0",
                     "id": 1,
@@ -159,6 +163,8 @@ mod tests {
         rpc_server.mock(|when, then| {
             when.method(POST).path("/").json_body_partial(
                 format!(r#"{{
+                    "jsonrpc": "2.0",
+                    "method": "eth_call",
                     "params": [
                         {{
                             "accessList": [],
@@ -169,7 +175,7 @@ mod tests {
                     ]
                 }}"#, address.to_string().to_ascii_lowercase())
             );
-            then.status(200).json_body_obj(&{
+            then.json_body_obj(&{
                 serde_json::json!({
                     "jsonrpc": "2.0",
                     "id": 1,
@@ -196,6 +202,8 @@ mod tests {
         rpc_server.mock(|when, then| {
             when.method(POST).path("/").json_body_partial(
                 format!(r#"{{
+                    "jsonrpc": "2.0",
+                    "method": "eth_call",
                     "params": [
                         {{
                             "accessList": [],
@@ -206,7 +214,7 @@ mod tests {
                     ]
                 }}"#, address.to_string().to_ascii_lowercase())
             );
-            then.status(200).json_body_obj(&{
+            then.json_body_obj(&{
                 serde_json::json!({
                     "jsonrpc": "2.0",
                     "id": 1,
@@ -222,6 +230,8 @@ mod tests {
         rpc_server.mock(|when, then| {
             when.method(POST).path("/").json_body_partial(
                 format!(r#"{{
+                    "jsonrpc": "2.0",
+                    "method": "eth_call",
                     "params": [
                         {{
                             "accessList": [],
@@ -232,7 +242,7 @@ mod tests {
                     ]
                 }}"#, address.to_string().to_ascii_lowercase())
             );
-            then.status(200).json_body_obj(&{
+            then.json_body_obj(&{
                 serde_json::json!({
                     "jsonrpc": "2.0",
                     "id": 1,
@@ -248,6 +258,8 @@ mod tests {
         rpc_server.mock(|when, then| {
             when.method(POST).path("/").json_body_partial(
                 format!(r#"{{
+                    "jsonrpc": "2.0",
+                    "method": "eth_call",
                     "params": [
                         {{
                             "accessList": [],
@@ -258,7 +270,7 @@ mod tests {
                     ]
                 }}"#, address.to_string().to_ascii_lowercase())
             );
-            then.status(200).json_body_obj(&{
+            then.json_body_obj(&{
                 serde_json::json!({
                     "jsonrpc": "2.0",
                     "id": 1,
@@ -285,6 +297,8 @@ mod tests {
         rpc_server.mock(|when, then| {
             when.method(POST).path("/").json_body_partial(
                 format!(r#"{{
+                    "jsonrpc": "2.0",
+                    "method": "eth_call",
                     "params": [
                         {{
                             "accessList": [],
@@ -295,7 +309,7 @@ mod tests {
                     ]
                 }}"#, address.to_string().to_ascii_lowercase())
             );
-            then.status(200).json_body_obj(&{
+            then.json_body_obj(&{
                 serde_json::json!({
                     "jsonrpc": "2.0",
                     "id": 1,
@@ -306,6 +320,8 @@ mod tests {
         rpc_server.mock(|when, then| {
             when.method(POST).path("/").json_body_partial(
                 format!(r#"{{
+                    "jsonrpc": "2.0",
+                    "method": "eth_call",
                     "params": [
                         {{
                             "accessList": [],
@@ -316,7 +332,7 @@ mod tests {
                     ]
                 }}"#, address.to_string().to_ascii_lowercase())
             );
-            then.status(200).json_body_obj(&{
+            then.json_body_obj(&{
                 serde_json::json!({
                     "jsonrpc": "2.0",
                     "id": 1,
@@ -332,6 +348,8 @@ mod tests {
         rpc_server.mock(|when, then| {
             when.method(POST).path("/").json_body_partial(
                 format!(r#"{{
+                    "jsonrpc": "2.0",
+                    "method": "eth_call",
                     "params": [
                         {{
                             "accessList": [],
@@ -342,7 +360,7 @@ mod tests {
                     ]
                 }}"#, address.to_string().to_ascii_lowercase())
             );
-            then.status(200).json_body_obj(&{
+            then.json_body_obj(&{
                 serde_json::json!({
                     "jsonrpc": "2.0",
                     "id": 1,
@@ -353,6 +371,8 @@ mod tests {
         rpc_server.mock(|when, then| {
             when.method(POST).path("/").json_body_partial(
                 format!(r#"{{
+                    "jsonrpc": "2.0",
+                    "method": "eth_call",
                     "params": [
                         {{
                             "accessList": [],
@@ -363,7 +383,7 @@ mod tests {
                     ]
                 }}"#, address.to_string().to_ascii_lowercase())
             );
-            then.status(200).json_body_obj(&{
+            then.json_body_obj(&{
                 serde_json::json!({
                     "jsonrpc": "2.0",
                     "id": 1,
