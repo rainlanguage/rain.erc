@@ -61,6 +61,7 @@ pub async fn supports_erc165(client: &ReadableClientHttp, contract_address: Addr
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serde_json::{from_str, Value};
     use httpmock::{Method::POST, MockServer};
     use alloy_ethers_typecast::transaction::ReadableClient;
 
@@ -71,6 +72,51 @@ mod tests {
             function externalFn2(uint256 val1, uint256 val2) external returns (uint256, bool);
             function externalFn3(address add) external returns (address);
         }
+    }
+
+    fn get_rpc_request_body(address: Address, data: &str) -> String {
+        format!(
+            r#"{{
+            "jsonrpc": "2.0",
+            "method": "eth_call",
+            "params": [
+                {{
+                    "accessList": [],
+                    "to": "{}",
+                    "data": "{}"
+                }},
+                "latest"
+            ]
+        }}"#,
+            address.to_string().to_ascii_lowercase(),
+            data
+        )
+    }
+
+    fn get_rpc_response_body(result_data: &str) -> String {
+        format!(
+            r#"{{
+            "jsonrpc": "2.0",
+            "id": 1,
+            "result": "{}"
+        }}"#,
+            result_data
+        )
+    }
+    
+    fn get_rpc_revert_body(code: i32, data: &str, message: &str) -> String {
+        format!(
+            r#"{{
+            "jsonrpc": "2.0",
+            "id": 1,
+            "error": {{
+                "code": {},
+                "data": "{}",
+                "message": "{}"
+            }}
+        }}"#,
+            code, data, message
+        )
     }
 
     #[test]
@@ -105,27 +151,18 @@ mod tests {
         // Mock a successful response, true
         let address = Address::random();
         rpc_server.mock(|when, then| {
-            when.method(POST).path("/").json_body_partial(
-                format!(r#"{{
-                    "jsonrpc": "2.0",
-                    "method": "eth_call",
-                    "params": [
-                        {{
-                            "accessList": [],
-                            "to": "{}",
-                            "data": "0x01ffc9a701ffc9a700000000000000000000000000000000000000000000000000000000"
-                        }},
-                        "latest"
-                    ]
-                }}"#, address.to_string().to_ascii_lowercase())
+            when.method(POST)
+                .path("/")
+                .json_body_partial(get_rpc_request_body(
+                    address,
+                    "0x01ffc9a701ffc9a700000000000000000000000000000000000000000000000000000000",
+                ));
+            then.json_body_obj(
+                &from_str::<Value>(&get_rpc_response_body(
+                    "0x0000000000000000000000000000000000000000000000000000000000000001",
+                ))
+                .unwrap(),
             );
-            then.json_body_obj(&{
-                serde_json::json!({
-                    "jsonrpc": "2.0",
-                    "id": 1,
-                    "result": "0x0000000000000000000000000000000000000000000000000000000000000001"
-                })
-            });
         });
         let result = supports_erc165_check1(&client, address).await;
         assert!(result);
@@ -133,27 +170,18 @@ mod tests {
         // Mock a successful response, false
         let address = Address::random();
         rpc_server.mock(|when, then| {
-            when.method(POST).path("/").json_body_partial(
-                format!(r#"{{
-                    "jsonrpc": "2.0",
-                    "method": "eth_call",
-                    "params": [
-                        {{
-                            "accessList": [],
-                            "to": "{}",
-                            "data": "0x01ffc9a701ffc9a700000000000000000000000000000000000000000000000000000000"
-                        }},
-                        "latest"
-                    ]
-                }}"#, address.to_string().to_ascii_lowercase())
+            when.method(POST)
+                .path("/")
+                .json_body_partial(get_rpc_request_body(
+                    address,
+                    "0x01ffc9a701ffc9a700000000000000000000000000000000000000000000000000000000",
+                ));
+            then.json_body_obj(
+                &from_str::<Value>(&get_rpc_response_body(
+                    "0x0000000000000000000000000000000000000000000000000000000000000000",
+                ))
+                .unwrap(),
             );
-            then.json_body_obj(&{
-                serde_json::json!({
-                    "jsonrpc": "2.0",
-                    "id": 1,
-                    "result": "0x0000000000000000000000000000000000000000000000000000000000000000"
-                })
-            });
         });
         let result = supports_erc165_check1(&client, address).await;
         assert!(!result);
@@ -161,31 +189,16 @@ mod tests {
         // Mock a revert response
         let address = Address::random();
         rpc_server.mock(|when, then| {
-            when.method(POST).path("/").json_body_partial(
-                format!(r#"{{
-                    "jsonrpc": "2.0",
-                    "method": "eth_call",
-                    "params": [
-                        {{
-                            "accessList": [],
-                            "to": "{}",
-                            "data": "0x01ffc9a701ffc9a700000000000000000000000000000000000000000000000000000000"
-                        }},
-                        "latest"
-                    ]
-                }}"#, address.to_string().to_ascii_lowercase())
+            when.method(POST)
+                .path("/")
+                .json_body_partial(get_rpc_request_body(
+                    address,
+                    "0x01ffc9a701ffc9a700000000000000000000000000000000000000000000000000000000",
+                ));
+            then.json_body_obj(
+                &from_str::<Value>(&get_rpc_revert_body(-32003, "0x00", "execution reverted"))
+                    .unwrap(),
             );
-            then.json_body_obj(&{
-                serde_json::json!({
-                    "jsonrpc": "2.0",
-                    "id": 1,
-                    "error": {
-                        "code": -32003,
-                        "data": "0x00",
-                        "message": "execution reverted"
-                    }
-                })
-            });
         });
         let result = supports_erc165_check1(&client, address).await;
         assert!(!result);
@@ -200,27 +213,18 @@ mod tests {
         // Mock a successful response, false
         let address = Address::random();
         rpc_server.mock(|when, then| {
-            when.method(POST).path("/").json_body_partial(
-                format!(r#"{{
-                    "jsonrpc": "2.0",
-                    "method": "eth_call",
-                    "params": [
-                        {{
-                            "accessList": [],
-                            "to": "{}",
-                            "data": "0x01ffc9a7ffffffff00000000000000000000000000000000000000000000000000000000"
-                        }},
-                        "latest"
-                    ]
-                }}"#, address.to_string().to_ascii_lowercase())
+            when.method(POST)
+                .path("/")
+                .json_body_partial(get_rpc_request_body(
+                    address,
+                    "0x01ffc9a7ffffffff00000000000000000000000000000000000000000000000000000000",
+                ));
+            then.json_body_obj(
+                &from_str::<Value>(&get_rpc_response_body(
+                    "0x0000000000000000000000000000000000000000000000000000000000000000",
+                ))
+                .unwrap(),
             );
-            then.json_body_obj(&{
-                serde_json::json!({
-                    "jsonrpc": "2.0",
-                    "id": 1,
-                    "result": "0x0000000000000000000000000000000000000000000000000000000000000000"
-                })
-            });
         });
         let result = supports_erc165_check2(&client, address).await;
         assert!(result);
@@ -228,27 +232,18 @@ mod tests {
         // Mock a successful response, true
         let address = Address::random();
         rpc_server.mock(|when, then| {
-            when.method(POST).path("/").json_body_partial(
-                format!(r#"{{
-                    "jsonrpc": "2.0",
-                    "method": "eth_call",
-                    "params": [
-                        {{
-                            "accessList": [],
-                            "to": "{}",
-                            "data": "0x01ffc9a7ffffffff00000000000000000000000000000000000000000000000000000000"
-                        }},
-                        "latest"
-                    ]
-                }}"#, address.to_string().to_ascii_lowercase())
+            when.method(POST)
+                .path("/")
+                .json_body_partial(get_rpc_request_body(
+                    address,
+                    "0x01ffc9a7ffffffff00000000000000000000000000000000000000000000000000000000",
+                ));
+            then.json_body_obj(
+                &from_str::<Value>(&get_rpc_response_body(
+                    "0x0000000000000000000000000000000000000000000000000000000000000001",
+                ))
+                .unwrap(),
             );
-            then.json_body_obj(&{
-                serde_json::json!({
-                    "jsonrpc": "2.0",
-                    "id": 1,
-                    "result": "0x0000000000000000000000000000000000000000000000000000000000000001"
-                })
-            });
         });
         let result = supports_erc165_check2(&client, address).await;
         assert!(!result);
@@ -256,31 +251,16 @@ mod tests {
         // Mock a revert response
         let address = Address::random();
         rpc_server.mock(|when, then| {
-            when.method(POST).path("/").json_body_partial(
-                format!(r#"{{
-                    "jsonrpc": "2.0",
-                    "method": "eth_call",
-                    "params": [
-                        {{
-                            "accessList": [],
-                            "to": "{}",
-                            "data": "0x01ffc9a7ffffffff00000000000000000000000000000000000000000000000000000000"
-                        }},
-                        "latest"
-                    ]
-                }}"#, address.to_string().to_ascii_lowercase())
+            when.method(POST)
+                .path("/")
+                .json_body_partial(get_rpc_request_body(
+                    address,
+                    "0x01ffc9a7ffffffff00000000000000000000000000000000000000000000000000000000",
+                ));
+            then.json_body_obj(
+                &from_str::<Value>(&get_rpc_revert_body(-32003, "0x00", "execution reverted"))
+                    .unwrap(),
             );
-            then.json_body_obj(&{
-                serde_json::json!({
-                    "jsonrpc": "2.0",
-                    "id": 1,
-                    "error": {
-                        "code": -32003,
-                        "data": "0x00",
-                        "message": "execution reverted"
-                    }
-                })
-            });
         });
         let result = supports_erc165_check2(&client, address).await;
         assert!(!result);
@@ -295,50 +275,32 @@ mod tests {
         // Mock a successful response
         let address = Address::random();
         rpc_server.mock(|when, then| {
-            when.method(POST).path("/").json_body_partial(
-                format!(r#"{{
-                    "jsonrpc": "2.0",
-                    "method": "eth_call",
-                    "params": [
-                        {{
-                            "accessList": [],
-                            "to": "{}",
-                            "data": "0x01ffc9a701ffc9a700000000000000000000000000000000000000000000000000000000"
-                        }},
-                        "latest"
-                    ]
-                }}"#, address.to_string().to_ascii_lowercase())
+            when.method(POST)
+                .path("/")
+                .json_body_partial(get_rpc_request_body(
+                    address,
+                    "0x01ffc9a701ffc9a700000000000000000000000000000000000000000000000000000000",
+                ));
+            then.json_body_obj(
+                &from_str::<Value>(&get_rpc_response_body(
+                    "0x0000000000000000000000000000000000000000000000000000000000000001",
+                ))
+                .unwrap(),
             );
-            then.json_body_obj(&{
-                serde_json::json!({
-                    "jsonrpc": "2.0",
-                    "id": 1,
-                    "result": "0x0000000000000000000000000000000000000000000000000000000000000001"
-                })
-            });
         });
         rpc_server.mock(|when, then| {
-            when.method(POST).path("/").json_body_partial(
-                format!(r#"{{
-                    "jsonrpc": "2.0",
-                    "method": "eth_call",
-                    "params": [
-                        {{
-                            "accessList": [],
-                            "to": "{}",
-                            "data": "0x01ffc9a7ffffffff00000000000000000000000000000000000000000000000000000000"
-                        }},
-                        "latest"
-                    ]
-                }}"#, address.to_string().to_ascii_lowercase())
+            when.method(POST)
+                .path("/")
+                .json_body_partial(get_rpc_request_body(
+                    address,
+                    "0x01ffc9a7ffffffff00000000000000000000000000000000000000000000000000000000",
+                ));
+            then.json_body_obj(
+                &from_str::<Value>(&get_rpc_response_body(
+                    "0x0000000000000000000000000000000000000000000000000000000000000000",
+                ))
+                .unwrap(),
             );
-            then.json_body_obj(&{
-                serde_json::json!({
-                    "jsonrpc": "2.0",
-                    "id": 1,
-                    "result": "0x0000000000000000000000000000000000000000000000000000000000000000"
-                })
-            });
         });
         let result = supports_erc165(&client, address).await;
         assert!(result);
@@ -346,54 +308,30 @@ mod tests {
         // Mock an unsuccessful response
         let address = Address::random();
         rpc_server.mock(|when, then| {
-            when.method(POST).path("/").json_body_partial(
-                format!(r#"{{
-                    "jsonrpc": "2.0",
-                    "method": "eth_call",
-                    "params": [
-                        {{
-                            "accessList": [],
-                            "to": "{}",
-                            "data": "0x01ffc9a701ffc9a700000000000000000000000000000000000000000000000000000000"
-                        }},
-                        "latest"
-                    ]
-                }}"#, address.to_string().to_ascii_lowercase())
+            when.method(POST)
+                .path("/")
+                .json_body_partial(get_rpc_request_body(
+                    address,
+                    "0x01ffc9a701ffc9a700000000000000000000000000000000000000000000000000000000",
+                ));
+            then.json_body_obj(
+                &from_str::<Value>(&get_rpc_response_body(
+                    "0x0000000000000000000000000000000000000000000000000000000000000001",
+                ))
+                .unwrap(),
             );
-            then.json_body_obj(&{
-                serde_json::json!({
-                    "jsonrpc": "2.0",
-                    "id": 1,
-                    "result": "0x0000000000000000000000000000000000000000000000000000000000000001"
-                })
-            });
         });
         rpc_server.mock(|when, then| {
-            when.method(POST).path("/").json_body_partial(
-                format!(r#"{{
-                    "jsonrpc": "2.0",
-                    "method": "eth_call",
-                    "params": [
-                        {{
-                            "accessList": [],
-                            "to": "{}",
-                            "data": "0x01ffc9a7ffffffff00000000000000000000000000000000000000000000000000000000"
-                        }},
-                        "latest"
-                    ]
-                }}"#, address.to_string().to_ascii_lowercase())
+            when.method(POST)
+                .path("/")
+                .json_body_partial(get_rpc_request_body(
+                    address,
+                    "0x01ffc9a7ffffffff00000000000000000000000000000000000000000000000000000000",
+                ));
+            then.json_body_obj(
+                &from_str::<Value>(&get_rpc_revert_body(-32003, "0x00", "execution reverted"))
+                    .unwrap(),
             );
-            then.json_body_obj(&{
-                serde_json::json!({
-                    "jsonrpc": "2.0",
-                    "id": 1,
-                    "error": {
-                        "code": -32003,
-                        "data": "0x00",
-                        "message": "execution reverted"
-                    }
-                })
-            });
         });
         let result = supports_erc165(&client, address).await;
         assert!(!result);
