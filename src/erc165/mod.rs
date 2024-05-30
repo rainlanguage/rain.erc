@@ -103,7 +103,7 @@ mod tests {
             result_data
         )
     }
-    
+
     fn get_rpc_revert_body(code: i32, data: &str, message: &str) -> String {
         format!(
             r#"{{
