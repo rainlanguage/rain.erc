@@ -69,10 +69,7 @@ mod tests {
         rpc::{Request, Response},
         transaction::ReadableClient,
     };
-    use ethers::{
-        types::{transaction::eip2718::TypedTransaction, BlockId, BlockNumber},
-        utils,
-    };
+    use ethers::types::{transaction::eip2718::TypedTransaction, BlockNumber};
 
     // test contracts bindings
     sol! {
@@ -83,33 +80,14 @@ mod tests {
         }
     }
 
-    fn get_rpc_request_body(
-        method: &str,
-        id: u64,
-        transaction: &AlloyTransactionRequest,
-    ) -> String {
-        let tx = utils::serialize(&TypedTransaction::Eip1559(transaction.to_eip1559()));
-        let block = utils::serialize::<BlockId>(&BlockNumber::Latest.into());
-        Request::new(id, method, [tx, block])
-            .to_json_string()
-            .unwrap()
-    }
-
-    fn get_rpc_success_response_body(id: u64, result_data: &str) -> String {
-        Response::new_success(id, result_data)
-            .to_json_string()
-            .unwrap()
-    }
-
-    fn get_rpc_error_response_body(
-        id: u64,
-        code: i64,
-        message: &str,
-        data: Option<&str>,
-    ) -> String {
-        Response::new_error(id, code, message, data)
-            .to_json_string()
-            .unwrap()
+    fn get_rpc_request_body(id: u64, transaction: &AlloyTransactionRequest) -> String {
+        Request::<(TypedTransaction, BlockNumber)>::new_call_request(
+            id,
+            TypedTransaction::Eip1559(transaction.to_eip1559()),
+            None,
+        )
+        .to_json_string()
+        .unwrap()
     }
 
     #[test]
@@ -148,7 +126,6 @@ mod tests {
                 .path("/")
                 .json_body_partial(
                     get_rpc_request_body(
-                        "eth_call",
                         1,
                         &AlloyTransactionRequest::new()
                         .with_to(Some(address))
@@ -157,10 +134,10 @@ mod tests {
                         ).unwrap())),
                 ));
             then.json_body_obj(
-                &from_str::<Value>(&get_rpc_success_response_body(
+                &from_str::<Value>(&Response::new_success(
                     1,
-                    "0x0000000000000000000000000000000000000000000000000000000000000001",
-                ))
+                    "0x0000000000000000000000000000000000000000000000000000000000000001"
+                ).to_json_string().unwrap())
                 .unwrap(),
             );
         });
@@ -173,7 +150,6 @@ mod tests {
             when.method(POST)
                 .path("/")
                 .json_body_partial(get_rpc_request_body(
-                    "eth_call",
                     2,
                     &AlloyTransactionRequest::new()
                         .with_to(Some(address))
@@ -182,10 +158,10 @@ mod tests {
                         ).unwrap())),
                 ));
             then.json_body_obj(
-                &from_str::<Value>(&get_rpc_success_response_body(
+                &from_str::<Value>(&Response::new_success(
                     2,
-                    "0x0000000000000000000000000000000000000000000000000000000000000000",
-                ))
+                    "0x0000000000000000000000000000000000000000000000000000000000000000"
+                ).to_json_string().unwrap())
                 .unwrap(),
             );
         });
@@ -198,7 +174,6 @@ mod tests {
             when.method(POST)
                 .path("/")
                 .json_body_partial(get_rpc_request_body(
-                    "eth_call",
                     3,
                     &AlloyTransactionRequest::new()
                         .with_to(Some(address))
@@ -207,12 +182,12 @@ mod tests {
                         ).unwrap())),
                 ));
             then.json_body_obj(
-                &from_str::<Value>(&get_rpc_error_response_body(
+                &from_str::<Value>(&Response::new_error(
                     3,
                     -32003,
                     "execution reverted",
                     Some("0x00"),
-                ))
+                ).to_json_string().unwrap())
                 .unwrap(),
             );
         });
@@ -231,7 +206,6 @@ mod tests {
             when.method(POST)
                 .path("/")
                 .json_body_partial(get_rpc_request_body(
-                    "eth_call",
                     1,
                     &AlloyTransactionRequest::new()
                         .with_to(Some(address))
@@ -240,10 +214,10 @@ mod tests {
                         ).unwrap())),
                 ));
             then.json_body_obj(
-                &from_str::<Value>(&get_rpc_success_response_body(
+                &from_str::<Value>(&Response::new_success(
                     1,
-                    "0x0000000000000000000000000000000000000000000000000000000000000000",
-                ))
+                    "0x0000000000000000000000000000000000000000000000000000000000000000"
+                ).to_json_string().unwrap())
                 .unwrap(),
             );
         });
@@ -256,7 +230,6 @@ mod tests {
             when.method(POST)
                 .path("/")
                 .json_body_partial(get_rpc_request_body(
-                    "eth_call",
                     2,
                     &AlloyTransactionRequest::new()
                         .with_to(Some(address))
@@ -265,10 +238,10 @@ mod tests {
                         ).unwrap())),
                 ));
             then.json_body_obj(
-                &from_str::<Value>(&get_rpc_success_response_body(
+                &from_str::<Value>(&Response::new_success(
                     2,
-                    "0x0000000000000000000000000000000000000000000000000000000000000001",
-                ))
+                    "0x0000000000000000000000000000000000000000000000000000000000000001"
+                ).to_json_string().unwrap())
                 .unwrap(),
             );
         });
@@ -281,7 +254,6 @@ mod tests {
             when.method(POST)
                 .path("/")
                 .json_body_partial(get_rpc_request_body(
-                    "eth_call",
                     3,
                     &AlloyTransactionRequest::new()
                         .with_to(Some(address))
@@ -290,12 +262,12 @@ mod tests {
                         ).unwrap())),
                 ));
             then.json_body_obj(
-                &from_str::<Value>(&get_rpc_error_response_body(
+                &from_str::<Value>(&Response::new_error(
                     3,
                     -32003,
                     "execution reverted",
                     Some("0x00"),
-                ))
+                ).to_json_string().unwrap())
                 .unwrap(),
             );
         });
@@ -314,7 +286,6 @@ mod tests {
             when.method(POST)
                 .path("/")
                 .json_body_partial(get_rpc_request_body(
-                    "eth_call",
                     1,
                     &AlloyTransactionRequest::new()
                         .with_to(Some(address))
@@ -323,10 +294,10 @@ mod tests {
                         ).unwrap())),
                 ));
             then.json_body_obj(
-                &from_str::<Value>(&get_rpc_success_response_body(
+                &from_str::<Value>(&Response::new_success(
                     1,
-                    "0x0000000000000000000000000000000000000000000000000000000000000001",
-                ))
+                    "0x0000000000000000000000000000000000000000000000000000000000000001"
+                ).to_json_string().unwrap())
                 .unwrap(),
             );
         });
@@ -334,7 +305,6 @@ mod tests {
             when.method(POST)
                 .path("/")
                 .json_body_partial(get_rpc_request_body(
-                    "eth_call",
                     2,
                     &AlloyTransactionRequest::new()
                         .with_to(Some(address))
@@ -343,10 +313,10 @@ mod tests {
                         ).unwrap())),
                 ));
             then.json_body_obj(
-                &from_str::<Value>(&get_rpc_success_response_body(
+                &from_str::<Value>(&Response::new_success(
                     2,
-                    "0x0000000000000000000000000000000000000000000000000000000000000000",
-                ))
+                    "0x0000000000000000000000000000000000000000000000000000000000000000"
+                ).to_json_string().unwrap())
                 .unwrap(),
             );
         });
@@ -359,7 +329,6 @@ mod tests {
             when.method(POST)
                 .path("/")
                 .json_body_partial(get_rpc_request_body(
-                    "eth_call",
                     3,
                     &AlloyTransactionRequest::new()
                         .with_to(Some(address))
@@ -368,10 +337,10 @@ mod tests {
                         ).unwrap())),
                 ));
             then.json_body_obj(
-                &from_str::<Value>(&get_rpc_success_response_body(
+                &from_str::<Value>(&Response::new_success(
                     3,
-                    "0x0000000000000000000000000000000000000000000000000000000000000001",
-                ))
+                    "0x0000000000000000000000000000000000000000000000000000000000000001"
+                ).to_json_string().unwrap())
                 .unwrap(),
             );
         });
@@ -379,7 +348,6 @@ mod tests {
             when.method(POST)
                 .path("/")
                 .json_body_partial(get_rpc_request_body(
-                    "eth_call",
                     4,
                     &AlloyTransactionRequest::new()
                         .with_to(Some(address))
@@ -388,12 +356,14 @@ mod tests {
                         ).unwrap())),
                 ));
             then.json_body_obj(
-                &from_str::<Value>(&get_rpc_error_response_body(
+                &from_str::<Value>(&Response::new_error(
                     4,
                     -32003,
                     "execution reverted",
                     Some("0x00"),
-                ))
+                )
+                .to_json_string()
+                .unwrap())
                 .unwrap(),
             );
         });
