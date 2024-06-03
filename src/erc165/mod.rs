@@ -222,7 +222,9 @@ mod tests {
                         1,
                         &AlloyTransactionRequest::new()
                         .with_to(Some(address))
-                        .with_data(Some(decode("0x01ffc9a701ffc9a700000000000000000000000000000000000000000000000000000000").unwrap())),
+                        .with_data(Some(decode(
+                            "0x01ffc9a701ffc9a700000000000000000000000000000000000000000000000000000000"
+                        ).unwrap())),
                 ));
             then.json_body_obj(
                 &from_str::<Value>(&get_rpc_success_response_body(
@@ -245,7 +247,9 @@ mod tests {
                     2,
                     &AlloyTransactionRequest::new()
                         .with_to(Some(address))
-                        .with_data(Some(decode("0x01ffc9a701ffc9a700000000000000000000000000000000000000000000000000000000").unwrap())),
+                        .with_data(Some(decode(
+                            "0x01ffc9a701ffc9a700000000000000000000000000000000000000000000000000000000"
+                        ).unwrap())),
                 ));
             then.json_body_obj(
                 &from_str::<Value>(&get_rpc_success_response_body(
@@ -268,7 +272,9 @@ mod tests {
                     3,
                     &AlloyTransactionRequest::new()
                         .with_to(Some(address))
-                        .with_data(Some(decode("0x01ffc9a701ffc9a700000000000000000000000000000000000000000000000000000000").unwrap())),
+                        .with_data(Some(decode(
+                            "0x01ffc9a701ffc9a700000000000000000000000000000000000000000000000000000000"
+                        ).unwrap())),
                 ));
             then.json_body_obj(
                 &from_str::<Value>(&get_rpc_error_response_body(
@@ -300,7 +306,9 @@ mod tests {
                     1,
                     &AlloyTransactionRequest::new()
                         .with_to(Some(address))
-                        .with_data(Some(decode("0x01ffc9a7ffffffff00000000000000000000000000000000000000000000000000000000").unwrap())),
+                        .with_data(Some(decode(
+                            "0x01ffc9a7ffffffff00000000000000000000000000000000000000000000000000000000"
+                        ).unwrap())),
                 ));
             then.json_body_obj(
                 &from_str::<Value>(&get_rpc_success_response_body(
@@ -323,7 +331,9 @@ mod tests {
                     2,
                     &AlloyTransactionRequest::new()
                         .with_to(Some(address))
-                        .with_data(Some(decode("0x01ffc9a7ffffffff00000000000000000000000000000000000000000000000000000000").unwrap())),
+                        .with_data(Some(decode(
+                            "0x01ffc9a7ffffffff00000000000000000000000000000000000000000000000000000000"
+                        ).unwrap())),
                 ));
             then.json_body_obj(
                 &from_str::<Value>(&get_rpc_success_response_body(
@@ -346,7 +356,9 @@ mod tests {
                     3,
                     &AlloyTransactionRequest::new()
                         .with_to(Some(address))
-                        .with_data(Some(decode("0x01ffc9a7ffffffff00000000000000000000000000000000000000000000000000000000").unwrap())),
+                        .with_data(Some(decode(
+                            "0x01ffc9a7ffffffff00000000000000000000000000000000000000000000000000000000"
+                        ).unwrap())),
                 ));
             then.json_body_obj(
                 &from_str::<Value>(&get_rpc_error_response_body(
@@ -378,7 +390,9 @@ mod tests {
                     1,
                     &AlloyTransactionRequest::new()
                         .with_to(Some(address))
-                        .with_data(Some(decode("0x01ffc9a701ffc9a700000000000000000000000000000000000000000000000000000000").unwrap())),
+                        .with_data(Some(decode(
+                            "0x01ffc9a701ffc9a700000000000000000000000000000000000000000000000000000000"
+                        ).unwrap())),
                 ));
             then.json_body_obj(
                 &from_str::<Value>(&get_rpc_success_response_body(
@@ -396,7 +410,9 @@ mod tests {
                     2,
                     &AlloyTransactionRequest::new()
                         .with_to(Some(address))
-                        .with_data(Some(decode("0x01ffc9a7ffffffff00000000000000000000000000000000000000000000000000000000").unwrap())),
+                        .with_data(Some(decode(
+                            "0x01ffc9a7ffffffff00000000000000000000000000000000000000000000000000000000"
+                        ).unwrap())),
                 ));
             then.json_body_obj(
                 &from_str::<Value>(&get_rpc_success_response_body(
@@ -419,7 +435,9 @@ mod tests {
                     3,
                     &AlloyTransactionRequest::new()
                         .with_to(Some(address))
-                        .with_data(Some(decode("0x01ffc9a701ffc9a700000000000000000000000000000000000000000000000000000000").unwrap())),
+                        .with_data(Some(decode(
+                            "0x01ffc9a701ffc9a700000000000000000000000000000000000000000000000000000000"
+                        ).unwrap())),
                 ));
             then.json_body_obj(
                 &from_str::<Value>(&get_rpc_success_response_body(
@@ -437,7 +455,9 @@ mod tests {
                     4,
                     &AlloyTransactionRequest::new()
                         .with_to(Some(address))
-                        .with_data(Some(decode("0x01ffc9a7ffffffff00000000000000000000000000000000000000000000000000000000").unwrap())),
+                        .with_data(Some(decode(
+                            "0x01ffc9a7ffffffff00000000000000000000000000000000000000000000000000000000"
+                        ).unwrap())),
                 ));
             then.json_body_obj(
                 &from_str::<Value>(&get_rpc_error_response_body(
