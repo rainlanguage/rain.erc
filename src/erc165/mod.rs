@@ -207,8 +207,7 @@ mod tests {
     #[tokio::test]
     async fn test_supports_erc165_check1() {
         let rpc_server = MockServer::start_async().await;
-        let rpc_url = rpc_server.url("/");
-        let client = ReadableClient::new_from_url(rpc_url.clone()).unwrap();
+        let client = ReadableClient::new_from_url(rpc_server.url("/")).unwrap();
 
         // Mock a successful response, true
         let address = Address::random();
@@ -293,8 +292,7 @@ mod tests {
     #[tokio::test]
     async fn test_supports_erc165_check2() {
         let rpc_server = MockServer::start_async().await;
-        let rpc_url = rpc_server.url("/");
-        let client = ReadableClient::new_from_url(rpc_url.clone()).unwrap();
+        let client = ReadableClient::new_from_url(rpc_server.url("/")).unwrap();
 
         // Mock a successful response, false
         let address = Address::random();
@@ -377,8 +375,7 @@ mod tests {
     #[tokio::test]
     async fn test_supports_erc165() {
         let rpc_server = MockServer::start_async().await;
-        let rpc_url = rpc_server.url("/");
-        let client = ReadableClient::new_from_url(rpc_url.clone()).unwrap();
+        let client = ReadableClient::new_from_url(rpc_server.url("/")).unwrap();
 
         // Mock a successful response
         let address = Address::random();
