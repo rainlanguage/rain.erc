@@ -50,7 +50,7 @@ async fn supports_erc165_check2(client: &ReadableClientHttp, contract_address: A
 }
 
 /// checks if the given contract implements ERC165
-/// the process is done as described per ERC165 specs:
+/// the process is done as described in ERC165 specs:
 ///
 /// https://eips.ethereum.org/EIPS/eip-165#how-to-detect-if-a-contract-implements-erc-165
 pub async fn supports_erc165(client: &ReadableClientHttp, contract_address: Address) -> bool {
@@ -80,7 +80,7 @@ mod tests {
         }
     }
 
-    fn get_rpc_request_body(id: u64, transaction: &AlloyTransactionRequest) -> String {
+    fn get_request_body(id: u64, transaction: &AlloyTransactionRequest) -> String {
         Request::<(TypedTransaction, BlockNumber)>::new_call_request(
             id,
             TypedTransaction::Eip1559(transaction.to_eip1559()),
@@ -120,12 +120,11 @@ mod tests {
 
         // Mock a successful response, true
         let address = Address::random();
-
         rpc_server.mock(|when, then| {
             when.method(POST)
                 .path("/")
                 .json_body_partial(
-                    get_rpc_request_body(
+                    get_request_body(
                         1,
                         &AlloyTransactionRequest::new()
                         .with_to(Some(address))
@@ -149,7 +148,7 @@ mod tests {
         rpc_server.mock(|when, then| {
             when.method(POST)
                 .path("/")
-                .json_body_partial(get_rpc_request_body(
+                .json_body_partial(get_request_body(
                     2,
                     &AlloyTransactionRequest::new()
                         .with_to(Some(address))
@@ -173,7 +172,7 @@ mod tests {
         rpc_server.mock(|when, then| {
             when.method(POST)
                 .path("/")
-                .json_body_partial(get_rpc_request_body(
+                .json_body_partial(get_request_body(
                     3,
                     &AlloyTransactionRequest::new()
                         .with_to(Some(address))
@@ -205,7 +204,7 @@ mod tests {
         rpc_server.mock(|when, then| {
             when.method(POST)
                 .path("/")
-                .json_body_partial(get_rpc_request_body(
+                .json_body_partial(get_request_body(
                     1,
                     &AlloyTransactionRequest::new()
                         .with_to(Some(address))
@@ -229,7 +228,7 @@ mod tests {
         rpc_server.mock(|when, then| {
             when.method(POST)
                 .path("/")
-                .json_body_partial(get_rpc_request_body(
+                .json_body_partial(get_request_body(
                     2,
                     &AlloyTransactionRequest::new()
                         .with_to(Some(address))
@@ -253,7 +252,7 @@ mod tests {
         rpc_server.mock(|when, then| {
             when.method(POST)
                 .path("/")
-                .json_body_partial(get_rpc_request_body(
+                .json_body_partial(get_request_body(
                     3,
                     &AlloyTransactionRequest::new()
                         .with_to(Some(address))
@@ -285,7 +284,7 @@ mod tests {
         rpc_server.mock(|when, then| {
             when.method(POST)
                 .path("/")
-                .json_body_partial(get_rpc_request_body(
+                .json_body_partial(get_request_body(
                     1,
                     &AlloyTransactionRequest::new()
                         .with_to(Some(address))
@@ -304,7 +303,7 @@ mod tests {
         rpc_server.mock(|when, then| {
             when.method(POST)
                 .path("/")
-                .json_body_partial(get_rpc_request_body(
+                .json_body_partial(get_request_body(
                     2,
                     &AlloyTransactionRequest::new()
                         .with_to(Some(address))
@@ -328,7 +327,7 @@ mod tests {
         rpc_server.mock(|when, then| {
             when.method(POST)
                 .path("/")
-                .json_body_partial(get_rpc_request_body(
+                .json_body_partial(get_request_body(
                     3,
                     &AlloyTransactionRequest::new()
                         .with_to(Some(address))
@@ -347,7 +346,7 @@ mod tests {
         rpc_server.mock(|when, then| {
             when.method(POST)
                 .path("/")
-                .json_body_partial(get_rpc_request_body(
+                .json_body_partial(get_request_body(
                     4,
                     &AlloyTransactionRequest::new()
                         .with_to(Some(address))
