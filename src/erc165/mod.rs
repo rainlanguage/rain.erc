@@ -111,11 +111,7 @@ mod tests {
             error: JsonRpcError,
         },
         #[allow(dead_code)]
-        Notification {
-            jsonrpc: &'a str,
-            method: &'a str,
-            params: Params<'a>,
-        },
+        Notification { method: &'a str, params: Params<'a> },
     }
 
     /// A JSON-RPC 2.0 error, taken from ethers since it is private
@@ -167,14 +163,19 @@ mod tests {
         serde_json::to_string(&res).unwrap()
     }
 
-    fn get_rpc_error_response_body(id: u64, code: i64, data: &str, message: &str) -> String {
+    fn get_rpc_error_response_body(
+        id: u64,
+        code: i64,
+        message: &str,
+        data: Option<&str>,
+    ) -> String {
         let res = Response::Error {
             id,
             jsonrpc: "2.0",
             error: JsonRpcError {
                 code,
                 message: message.to_string(),
-                data: Some(serde_json::to_value(data).unwrap()),
+                data: data.map(|v| serde_json::to_value(v).unwrap()),
             },
         };
         serde_json::to_string(&res).unwrap()
@@ -273,8 +274,8 @@ mod tests {
                 &from_str::<Value>(&get_rpc_error_response_body(
                     3,
                     -32003,
-                    "0x00",
                     "execution reverted",
+                    Some("0x00"),
                 ))
                 .unwrap(),
             );
@@ -351,8 +352,8 @@ mod tests {
                 &from_str::<Value>(&get_rpc_error_response_body(
                     3,
                     -32003,
-                    "0x00",
                     "execution reverted",
+                    Some("0x00"),
                 ))
                 .unwrap(),
             );
@@ -442,8 +443,8 @@ mod tests {
                 &from_str::<Value>(&get_rpc_error_response_body(
                     4,
                     -32003,
-                    "0x00",
                     "execution reverted",
+                    Some("0x00"),
                 ))
                 .unwrap(),
             );
