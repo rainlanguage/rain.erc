@@ -62,78 +62,17 @@ pub async fn supports_erc165(client: &ReadableClientHttp, contract_address: Addr
 mod tests {
     use super::*;
     use alloy_primitives::hex::decode;
-    use serde::{Deserialize, Serialize};
     use httpmock::{Method::POST, MockServer};
-    use serde_json::{from_str, value::RawValue, Value};
+    use serde_json::{from_str, Value};
     use alloy_ethers_typecast::{
         request_shim::{AlloyTransactionRequest, TransactionRequestShim},
+        rpc::{Request, Response},
         transaction::ReadableClient,
     };
     use ethers::{
-        types::{transaction::eip2718::TypedTransaction, BlockId, BlockNumber, U256},
+        types::{transaction::eip2718::TypedTransaction, BlockId, BlockNumber},
         utils,
     };
-
-    /// A JSON-RPC request, taken from ethers since it is private
-    /// https://github.com/gakonst/ethers-rs/blob/master/ethers-providers/src/rpc/transports/common.rs
-    #[derive(Serialize, Deserialize, Debug)]
-    pub struct Request<'a, T> {
-        id: u64,
-        jsonrpc: &'a str,
-        method: &'a str,
-        params: T,
-    }
-    impl<'a, T> Request<'a, T> {
-        /// Creates a new JSON RPC request
-        pub fn new(id: u64, method: &'a str, params: T) -> Self {
-            Self {
-                id,
-                jsonrpc: "2.0",
-                method,
-                params,
-            }
-        }
-    }
-
-    /// A JSON-RPC response, taken from ethers since it is private
-    /// https://github.com/gakonst/ethers-rs/blob/master/ethers-providers/src/rpc/transports/common.rs
-    #[derive(Debug, Serialize)]
-    #[serde(untagged)]
-    pub enum Response<'a> {
-        Success {
-            jsonrpc: &'a str,
-            id: u64,
-            result: &'a RawValue,
-        },
-        Error {
-            jsonrpc: &'a str,
-            id: u64,
-            error: JsonRpcError,
-        },
-        #[allow(dead_code)]
-        Notification { method: &'a str, params: Params<'a> },
-    }
-
-    /// A JSON-RPC 2.0 error, taken from ethers since it is private
-    /// https://github.com/gakonst/ethers-rs/blob/master/ethers-providers/src/rpc/transports/common.rs
-    #[derive(Debug, Clone, Serialize)]
-    pub struct JsonRpcError {
-        /// The error code
-        pub code: i64,
-        /// The error message
-        pub message: String,
-        /// Additional data
-        pub data: Option<Value>,
-    }
-
-    /// taken from ethers since it is private
-    /// https://github.com/gakonst/ethers-rs/blob/master/ethers-providers/src/rpc/transports/common.rs
-    #[derive(Deserialize, Debug, Serialize)]
-    pub struct Params<'a> {
-        pub subscription: U256,
-        #[serde(borrow)]
-        pub result: &'a RawValue,
-    }
 
     // test contracts bindings
     sol! {
@@ -151,16 +90,15 @@ mod tests {
     ) -> String {
         let tx = utils::serialize(&TypedTransaction::Eip1559(transaction.to_eip1559()));
         let block = utils::serialize::<BlockId>(&BlockNumber::Latest.into());
-        serde_json::to_string(&Request::new(id, method, [tx, block])).unwrap()
+        Request::new(id, method, [tx, block])
+            .to_json_string()
+            .unwrap()
     }
 
     fn get_rpc_success_response_body(id: u64, result_data: &str) -> String {
-        let res = Response::Success {
-            id,
-            jsonrpc: "2.0",
-            result: &RawValue::from_string(format!("\"{}\"", result_data)).unwrap(),
-        };
-        serde_json::to_string(&res).unwrap()
+        Response::new_success(id, result_data)
+            .to_json_string()
+            .unwrap()
     }
 
     fn get_rpc_error_response_body(
@@ -169,16 +107,9 @@ mod tests {
         message: &str,
         data: Option<&str>,
     ) -> String {
-        let res = Response::Error {
-            id,
-            jsonrpc: "2.0",
-            error: JsonRpcError {
-                code,
-                message: message.to_string(),
-                data: data.map(|v| serde_json::to_value(v).unwrap()),
-            },
-        };
-        serde_json::to_string(&res).unwrap()
+        Response::new_error(id, code, message, data)
+            .to_json_string()
+            .unwrap()
     }
 
     #[test]

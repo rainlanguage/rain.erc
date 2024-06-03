@@ -10,7 +10,7 @@ repository = "https://github.com/rainlanguage/rain.erc"
 thiserror = "1.0.56"
 alloy-primitives = "0.6.3"
 alloy-sol-types = { version = "0.6.3", features = ["json"] }
-alloy-ethers-typecast = { git = "https://github.com/rainlanguage/alloy-ethers-typecast", rev = "a6bcb86b9b61a56d2440d33313f024297ce737bb" }
+alloy-ethers-typecast = { git = "https://github.com/rainlanguage/alloy-ethers-typecast", rev = "3225b3aa057b24c1864be4b7748d22c0518c9d91" }
 
 [dev-dependencies]
 tokio = { version = "1.28.0", features = ["full"] }
