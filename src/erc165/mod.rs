@@ -81,7 +81,7 @@ mod tests {
     }
 
     fn get_request_body(id: u64, transaction: &AlloyTransactionRequest) -> String {
-        Request::<(TypedTransaction, BlockNumber)>::new_call_request(
+        Request::<(TypedTransaction, BlockNumber)>::eth_call_request(
             id,
             TypedTransaction::Eip1559(transaction.to_eip1559()),
             None,
