@@ -54,8 +54,9 @@ async fn supports_erc165_check2(client: &ReadableClientHttp, contract_address: A
 ///
 /// https://eips.ethereum.org/EIPS/eip-165#how-to-detect-if-a-contract-implements-erc-165
 pub async fn supports_erc165(client: &ReadableClientHttp, contract_address: Address) -> bool {
-    supports_erc165_check1(client, contract_address).await
-        && supports_erc165_check2(client, contract_address).await
+    let check1 = supports_erc165_check1(client, contract_address);
+    let check2 = supports_erc165_check2(client, contract_address);
+    check1.await && check2.await
 }
 
 #[cfg(test)]
