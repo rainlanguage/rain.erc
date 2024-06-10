@@ -80,16 +80,6 @@ mod tests {
         }
     }
 
-    fn get_request_body(id: u64, transaction: &AlloyTransactionRequest) -> String {
-        Request::<(TypedTransaction, BlockNumber)>::eth_call_request(
-            id,
-            TypedTransaction::Eip1559(transaction.to_eip1559()),
-            None,
-        )
-        .to_json_string()
-        .unwrap()
-    }
-
     #[test]
     fn test_get_interface_id() {
         let selectors = vec![
@@ -124,14 +114,19 @@ mod tests {
             when.method(POST)
                 .path("/")
                 .json_body_partial(
-                    get_request_body(
+                    Request::<(TypedTransaction, BlockNumber)>::eth_call_request(
                         1,
-                        &AlloyTransactionRequest::new()
-                        .with_to(Some(address))
-                        .with_data(Some(decode(
-                            "0x01ffc9a701ffc9a700000000000000000000000000000000000000000000000000000000"
-                        ).unwrap())),
-                ));
+                        TypedTransaction::Eip1559(
+                            AlloyTransactionRequest::new()
+                                .with_to(Some(address))
+                                .with_data(Some(decode("0x01ffc9a701ffc9a700000000000000000000000000000000000000000000000000000000").unwrap()))
+                            .to_eip1559()
+                        ),
+                        None
+                    )
+                    .to_json_string()
+                    .unwrap(),
+                );
             then.json_body_obj(
                 &from_str::<Value>(&Response::new_success(
                     1,
@@ -148,14 +143,20 @@ mod tests {
         rpc_server.mock(|when, then| {
             when.method(POST)
                 .path("/")
-                .json_body_partial(get_request_body(
-                    2,
-                    &AlloyTransactionRequest::new()
-                        .with_to(Some(address))
-                        .with_data(Some(decode(
-                            "0x01ffc9a701ffc9a700000000000000000000000000000000000000000000000000000000"
-                        ).unwrap())),
-                ));
+                .json_body_partial(
+                    Request::<(TypedTransaction, BlockNumber)>::eth_call_request(
+                        2,
+                        TypedTransaction::Eip1559(
+                            AlloyTransactionRequest::new()
+                                .with_to(Some(address))
+                                .with_data(Some(decode("0x01ffc9a701ffc9a700000000000000000000000000000000000000000000000000000000").unwrap()))
+                            .to_eip1559()
+                        ),
+                        None
+                    )
+                    .to_json_string()
+                    .unwrap(),
+                );
             then.json_body_obj(
                 &from_str::<Value>(&Response::new_success(
                     2,
@@ -172,14 +173,20 @@ mod tests {
         rpc_server.mock(|when, then| {
             when.method(POST)
                 .path("/")
-                .json_body_partial(get_request_body(
-                    3,
-                    &AlloyTransactionRequest::new()
-                        .with_to(Some(address))
-                        .with_data(Some(decode(
-                            "0x01ffc9a701ffc9a700000000000000000000000000000000000000000000000000000000"
-                        ).unwrap())),
-                ));
+                .json_body_partial(
+                    Request::<(TypedTransaction, BlockNumber)>::eth_call_request(
+                        3,
+                        TypedTransaction::Eip1559(
+                            AlloyTransactionRequest::new()
+                                .with_to(Some(address))
+                                .with_data(Some(decode("0x01ffc9a701ffc9a700000000000000000000000000000000000000000000000000000000").unwrap()))
+                            .to_eip1559()
+                        ),
+                        None
+                    )
+                    .to_json_string()
+                    .unwrap(),
+                );
             then.json_body_obj(
                 &from_str::<Value>(&Response::new_error(
                     3,
@@ -204,14 +211,20 @@ mod tests {
         rpc_server.mock(|when, then| {
             when.method(POST)
                 .path("/")
-                .json_body_partial(get_request_body(
-                    1,
-                    &AlloyTransactionRequest::new()
-                        .with_to(Some(address))
-                        .with_data(Some(decode(
-                            "0x01ffc9a7ffffffff00000000000000000000000000000000000000000000000000000000"
-                        ).unwrap())),
-                ));
+                .json_body_partial(
+                    Request::<(TypedTransaction, BlockNumber)>::eth_call_request(
+                        1,
+                        TypedTransaction::Eip1559(
+                            AlloyTransactionRequest::new()
+                                .with_to(Some(address))
+                                .with_data(Some(decode("0x01ffc9a7ffffffff00000000000000000000000000000000000000000000000000000000").unwrap()))
+                            .to_eip1559()
+                        ),
+                        None
+                    )
+                    .to_json_string()
+                    .unwrap(),
+                );
             then.json_body_obj(
                 &from_str::<Value>(&Response::new_success(
                     1,
@@ -228,14 +241,20 @@ mod tests {
         rpc_server.mock(|when, then| {
             when.method(POST)
                 .path("/")
-                .json_body_partial(get_request_body(
-                    2,
-                    &AlloyTransactionRequest::new()
-                        .with_to(Some(address))
-                        .with_data(Some(decode(
-                            "0x01ffc9a7ffffffff00000000000000000000000000000000000000000000000000000000"
-                        ).unwrap())),
-                ));
+                .json_body_partial(
+                    Request::<(TypedTransaction, BlockNumber)>::eth_call_request(
+                        2,
+                        TypedTransaction::Eip1559(
+                            AlloyTransactionRequest::new()
+                                .with_to(Some(address))
+                                .with_data(Some(decode("0x01ffc9a7ffffffff00000000000000000000000000000000000000000000000000000000").unwrap()))
+                            .to_eip1559()
+                        ),
+                        None
+                    )
+                    .to_json_string()
+                    .unwrap(),
+                );
             then.json_body_obj(
                 &from_str::<Value>(&Response::new_success(
                     2,
@@ -252,14 +271,20 @@ mod tests {
         rpc_server.mock(|when, then| {
             when.method(POST)
                 .path("/")
-                .json_body_partial(get_request_body(
-                    3,
-                    &AlloyTransactionRequest::new()
-                        .with_to(Some(address))
-                        .with_data(Some(decode(
-                            "0x01ffc9a7ffffffff00000000000000000000000000000000000000000000000000000000"
-                        ).unwrap())),
-                ));
+                .json_body_partial(
+                    Request::<(TypedTransaction, BlockNumber)>::eth_call_request(
+                        3,
+                        TypedTransaction::Eip1559(
+                            AlloyTransactionRequest::new()
+                                .with_to(Some(address))
+                                .with_data(Some(decode("0x01ffc9a7ffffffff00000000000000000000000000000000000000000000000000000000").unwrap()))
+                            .to_eip1559()
+                        ),
+                        None
+                    )
+                    .to_json_string()
+                    .unwrap(),
+                );
             then.json_body_obj(
                 &from_str::<Value>(&Response::new_error(
                     3,
@@ -284,14 +309,20 @@ mod tests {
         rpc_server.mock(|when, then| {
             when.method(POST)
                 .path("/")
-                .json_body_partial(get_request_body(
-                    1,
-                    &AlloyTransactionRequest::new()
-                        .with_to(Some(address))
-                        .with_data(Some(decode(
-                            "0x01ffc9a701ffc9a700000000000000000000000000000000000000000000000000000000"
-                        ).unwrap())),
-                ));
+                .json_body_partial(
+                    Request::<(TypedTransaction, BlockNumber)>::eth_call_request(
+                        1,
+                        TypedTransaction::Eip1559(
+                            AlloyTransactionRequest::new()
+                                .with_to(Some(address))
+                                .with_data(Some(decode("0x01ffc9a701ffc9a700000000000000000000000000000000000000000000000000000000").unwrap()))
+                            .to_eip1559()
+                        ),
+                        None
+                    )
+                    .to_json_string()
+                    .unwrap(),
+                );
             then.json_body_obj(
                 &from_str::<Value>(&Response::new_success(
                     1,
@@ -303,14 +334,20 @@ mod tests {
         rpc_server.mock(|when, then| {
             when.method(POST)
                 .path("/")
-                .json_body_partial(get_request_body(
-                    2,
-                    &AlloyTransactionRequest::new()
-                        .with_to(Some(address))
-                        .with_data(Some(decode(
-                            "0x01ffc9a7ffffffff00000000000000000000000000000000000000000000000000000000"
-                        ).unwrap())),
-                ));
+                .json_body_partial(
+                    Request::<(TypedTransaction, BlockNumber)>::eth_call_request(
+                        2,
+                        TypedTransaction::Eip1559(
+                            AlloyTransactionRequest::new()
+                                .with_to(Some(address))
+                                .with_data(Some(decode("0x01ffc9a7ffffffff00000000000000000000000000000000000000000000000000000000").unwrap()))
+                            .to_eip1559()
+                        ),
+                        None
+                    )
+                    .to_json_string()
+                    .unwrap(),
+                );
             then.json_body_obj(
                 &from_str::<Value>(&Response::new_success(
                     2,
@@ -327,14 +364,20 @@ mod tests {
         rpc_server.mock(|when, then| {
             when.method(POST)
                 .path("/")
-                .json_body_partial(get_request_body(
-                    3,
-                    &AlloyTransactionRequest::new()
-                        .with_to(Some(address))
-                        .with_data(Some(decode(
-                            "0x01ffc9a701ffc9a700000000000000000000000000000000000000000000000000000000"
-                        ).unwrap())),
-                ));
+                .json_body_partial(
+                    Request::<(TypedTransaction, BlockNumber)>::eth_call_request(
+                        3,
+                        TypedTransaction::Eip1559(
+                            AlloyTransactionRequest::new()
+                                .with_to(Some(address))
+                                .with_data(Some(decode("0x01ffc9a701ffc9a700000000000000000000000000000000000000000000000000000000").unwrap()))
+                            .to_eip1559()
+                        ),
+                        None
+                    )
+                    .to_json_string()
+                    .unwrap(),
+                );
             then.json_body_obj(
                 &from_str::<Value>(&Response::new_success(
                     3,
@@ -346,14 +389,20 @@ mod tests {
         rpc_server.mock(|when, then| {
             when.method(POST)
                 .path("/")
-                .json_body_partial(get_request_body(
-                    4,
-                    &AlloyTransactionRequest::new()
-                        .with_to(Some(address))
-                        .with_data(Some(decode(
-                            "0x01ffc9a7ffffffff00000000000000000000000000000000000000000000000000000000"
-                        ).unwrap())),
-                ));
+                .json_body_partial(
+                    Request::<(TypedTransaction, BlockNumber)>::eth_call_request(
+                        4,
+                        TypedTransaction::Eip1559(
+                            AlloyTransactionRequest::new()
+                                .with_to(Some(address))
+                                .with_data(Some(decode("0x01ffc9a7ffffffff00000000000000000000000000000000000000000000000000000000").unwrap()))
+                            .to_eip1559()
+                        ),
+                        None
+                    )
+                    .to_json_string()
+                    .unwrap(),
+                );
             then.json_body_obj(
                 &from_str::<Value>(&Response::new_error(
                     4,
