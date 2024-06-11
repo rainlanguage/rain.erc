@@ -120,8 +120,12 @@ mod tests {
                         TypedTransaction::Eip1559(
                             AlloyTransactionRequest::new()
                                 .with_to(Some(address))
-                                .with_data(Some(decode("0x01ffc9a701ffc9a700000000000000000000000000000000000000000000000000000000").unwrap()))
-                            .to_eip1559()
+                                .with_data(Some(
+                                    decode(
+                                        "0x01ffc9a701ffc9a700000000000000000000000000000000000000000000000000000000"
+                                    ).unwrap()
+                                ))
+                                .to_eip1559()
                         ),
                         None
                     )
@@ -150,8 +154,12 @@ mod tests {
                         TypedTransaction::Eip1559(
                             AlloyTransactionRequest::new()
                                 .with_to(Some(address))
-                                .with_data(Some(decode("0x01ffc9a701ffc9a700000000000000000000000000000000000000000000000000000000").unwrap()))
-                            .to_eip1559()
+                                .with_data(Some(
+                                    decode(
+                                        "0x01ffc9a701ffc9a700000000000000000000000000000000000000000000000000000000"
+                                    ).unwrap()
+                                ))
+                                .to_eip1559()
                         ),
                         None
                     )
@@ -180,8 +188,12 @@ mod tests {
                         TypedTransaction::Eip1559(
                             AlloyTransactionRequest::new()
                                 .with_to(Some(address))
-                                .with_data(Some(decode("0x01ffc9a701ffc9a700000000000000000000000000000000000000000000000000000000").unwrap()))
-                            .to_eip1559()
+                                .with_data(Some(
+                                    decode(
+                                        "0x01ffc9a701ffc9a700000000000000000000000000000000000000000000000000000000"
+                                    ).unwrap()
+                                ))
+                                .to_eip1559()
                         ),
                         None
                     )
@@ -218,8 +230,12 @@ mod tests {
                         TypedTransaction::Eip1559(
                             AlloyTransactionRequest::new()
                                 .with_to(Some(address))
-                                .with_data(Some(decode("0x01ffc9a7ffffffff00000000000000000000000000000000000000000000000000000000").unwrap()))
-                            .to_eip1559()
+                                .with_data(Some(
+                                    decode(
+                                        "0x01ffc9a7ffffffff00000000000000000000000000000000000000000000000000000000"
+                                    ).unwrap()
+                                ))
+                                .to_eip1559()
                         ),
                         None
                     )
@@ -248,8 +264,12 @@ mod tests {
                         TypedTransaction::Eip1559(
                             AlloyTransactionRequest::new()
                                 .with_to(Some(address))
-                                .with_data(Some(decode("0x01ffc9a7ffffffff00000000000000000000000000000000000000000000000000000000").unwrap()))
-                            .to_eip1559()
+                                .with_data(Some(
+                                    decode(
+                                        "0x01ffc9a7ffffffff00000000000000000000000000000000000000000000000000000000"
+                                    ).unwrap()
+                                ))
+                                .to_eip1559()
                         ),
                         None
                     )
@@ -278,8 +298,12 @@ mod tests {
                         TypedTransaction::Eip1559(
                             AlloyTransactionRequest::new()
                                 .with_to(Some(address))
-                                .with_data(Some(decode("0x01ffc9a7ffffffff00000000000000000000000000000000000000000000000000000000").unwrap()))
-                            .to_eip1559()
+                                .with_data(Some(
+                                    decode(
+                                        "0x01ffc9a7ffffffff00000000000000000000000000000000000000000000000000000000"
+                                    ).unwrap()
+                                ))
+                                .to_eip1559()
                         ),
                         None
                     )
@@ -316,8 +340,12 @@ mod tests {
                         TypedTransaction::Eip1559(
                             AlloyTransactionRequest::new()
                                 .with_to(Some(address))
-                                .with_data(Some(decode("0x01ffc9a701ffc9a700000000000000000000000000000000000000000000000000000000").unwrap()))
-                            .to_eip1559()
+                                .with_data(Some(
+                                    decode(
+                                        "0x01ffc9a701ffc9a700000000000000000000000000000000000000000000000000000000"
+                                    ).unwrap()
+                                ))
+                                .to_eip1559()
                         ),
                         None
                     )
@@ -341,8 +369,12 @@ mod tests {
                         TypedTransaction::Eip1559(
                             AlloyTransactionRequest::new()
                                 .with_to(Some(address))
-                                .with_data(Some(decode("0x01ffc9a7ffffffff00000000000000000000000000000000000000000000000000000000").unwrap()))
-                            .to_eip1559()
+                                .with_data(Some(
+                                    decode(
+                                        "0x01ffc9a7ffffffff00000000000000000000000000000000000000000000000000000000"
+                                    ).unwrap()
+                                ))
+                                .to_eip1559()
                         ),
                         None
                     )
@@ -371,8 +403,12 @@ mod tests {
                         TypedTransaction::Eip1559(
                             AlloyTransactionRequest::new()
                                 .with_to(Some(address))
-                                .with_data(Some(decode("0x01ffc9a701ffc9a700000000000000000000000000000000000000000000000000000000").unwrap()))
-                            .to_eip1559()
+                                .with_data(Some(
+                                    decode(
+                                        "0x01ffc9a701ffc9a700000000000000000000000000000000000000000000000000000000"
+                                    ).unwrap()
+                                ))
+                                .to_eip1559()
                         ),
                         None
                     )
@@ -396,8 +432,12 @@ mod tests {
                         TypedTransaction::Eip1559(
                             AlloyTransactionRequest::new()
                                 .with_to(Some(address))
-                                .with_data(Some(decode("0x01ffc9a7ffffffff00000000000000000000000000000000000000000000000000000000").unwrap()))
-                            .to_eip1559()
+                                .with_data(Some(
+                                    decode(
+                                        "0x01ffc9a7ffffffff00000000000000000000000000000000000000000000000000000000"
+                                    ).unwrap()
+                                ))
+                                .to_eip1559()
                         ),
                         None
                     )
