@@ -1,0 +1,28 @@
+name: Rainix CI
+on: [push]
+
+jobs:
+  standard-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        task: [rainix-rs-test, rainix-rs-artifacts, rainix-rs-static]
+      fail-fast: false
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Install Nix 1/2
+        uses: DeterminateSystems/nix-installer-action@v4
+      - name: Install Nix 2/2
+        uses: DeterminateSystems/magic-nix-cache-action@v2
+
+      - name: Rainix Rust Prelude
+        run: nix develop -c rainix-rs-prelude
+
+      - name: Run Command ${{ matrix.task }}
+        run: nix develop -c ${{ matrix.task }}

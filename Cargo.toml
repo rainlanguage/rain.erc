@@ -1,0 +1,29 @@
+[package]
+name = "rain-erc"
+version = "0.0.0"
+edition = "2021"
+description = "Provides ERC related utitlies in rust"
+license = "CAL-1.0"
+repository = "https://github.com/rainlanguage/rain.erc"
+
+[dependencies]
+thiserror = "1.0.56"
+alloy-primitives = "0.6.3"
+alloy-sol-types = { version = "0.6.3", features = ["json"] }
+alloy-ethers-typecast = { git = "https://github.com/rainlanguage/alloy-ethers-typecast", rev = "05b6396271b77a4844c29bf840b7a587be388ff8" }
+
+[dev-dependencies]
+tokio = { version = "1.28.0", features = ["full"] }
+httpmock = "0.7.0"
+serde = "1.0.203"
+serde_json = { version = "1.0.117", features = ["raw_value"] }
+ethers = { version = "2.0.14" }
+
+[lib]
+path = "src/lib.rs"
+
+[lints.clippy]
+all = "warn"
+
+[package.metadata.docs.rs]
+all-features = true
