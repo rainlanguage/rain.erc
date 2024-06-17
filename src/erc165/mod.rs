@@ -1,27 +1,34 @@
 use alloy_primitives::Address;
-use alloy_sol_types::{sol, SolCall};
+use alloy_sol_types::{sol, SolCall, SolInterface};
 use alloy_ethers_typecast::transaction::{ReadContractParameters, ReadableClientHttp};
 
 // IERC165 contract alloy bindings
 sol!("lib/forge-std/src/interfaces/IERC165.sol");
 
-/// get interface id from the given array of selectors, the array of selectors
-/// should include all the functions (and only function) selectors of the
-/// interface, in alloy and using its sol! macro bindings, the functions selectors
-/// can be accessed through: `{AlloyContractName}::{AlloyContractNameCalls}::SELECTORS``
-///
-/// related info can be found here:
-/// https://eips.ethereum.org/EIPS/eip-165#how-interfaces-are-identified
-pub fn get_interface_id(selectors: &[[u8; 4]]) -> [u8; 4] {
-    if selectors.is_empty() {
-        panic!("no selectors")
+/// Calculates XOR of the selectors of a type that implements SolInterface
+pub trait XorSelectors<T: SolInterface> {
+    /// get xor of all the selectors.
+    /// 
+    /// in order to get interface id the array of selectors should include all the functions
+    /// (and only function) selectors of the interface, in alloy and using its sol! macro 
+    /// bindings, the generated Calls enum includes all the fn selectors:
+    /// `{AlloyContractName}::{AlloyContractNameCalls}`
+    ///
+    /// related info can be found here:
+    /// https://eips.ethereum.org/EIPS/eip-165#how-interfaces-are-identified
+    fn xor_selectors() -> anyhow::Result<[u8; 4]> {
+        let selectors = T::selectors().collect::<Vec<_>>();
+        if selectors.is_empty() {
+            return Err(anyhow::anyhow!("no selectors"));
+        }
+        let mut result = u32::from_be_bytes(selectors[0]);
+        for selector in &selectors[1..] {
+            result ^= u32::from_be_bytes(*selector);
+        }
+        Ok(result.to_be_bytes())
     }
-    let mut result = u32::from_be_bytes(selectors[0]);
-    for selector in &selectors[1..] {
-        result ^= u32::from_be_bytes(*selector);
-    }
-    result.to_be_bytes()
 }
+impl<T: SolInterface> XorSelectors<T> for T {}
 
 /// the first check for checking if a contract supports erc165
 async fn supports_erc165_check1(client: &ReadableClientHttp, contract_address: Address) -> bool {
@@ -71,6 +78,7 @@ mod tests {
         transaction::ReadableClient,
     };
     use ethers::types::{transaction::eip2718::TypedTransaction, BlockNumber};
+    use super::XorSelectors;
 
     // test contracts bindings
     sol! {
@@ -78,28 +86,18 @@ mod tests {
             function externalFn1() external pure returns (bool);
             function externalFn2(uint256 val1, uint256 val2) external returns (uint256, bool);
             function externalFn3(address add) external returns (address);
+            error SomeError();
+            event SomeEvent(uint256 value);
         }
     }
 
     #[test]
     fn test_get_interface_id() {
-        let selectors = vec![
-            //[1     2       3       4]
-            [0b0001, 0b0010, 0b0011, 0b0100],
-            //[5     6       7       8]
-            [0b0101, 0b0110, 0b0111, 0b1000],
-            //[9     10      11      12]
-            [0b1001, 0b1010, 0b1011, 0b1100],
-        ];
-        let result = get_interface_id(&selectors);
-        let expected: [u8; 4] = [0b1101, 0b1110, 0b1111, 0b0000]; // [13 14 15 0]
-        assert_eq!(result, expected);
-
-        let result = get_interface_id(IERC165::IERC165Calls::SELECTORS);
+        let result = IERC165::IERC165Calls::xor_selectors().unwrap();
         let expected: [u8; 4] = 0x01ffc9a7u32.to_be_bytes(); // known IERC165 interface id
         assert_eq!(result, expected);
 
-        let result = get_interface_id(ITest::ITestCalls::SELECTORS);
+        let result = ITest::ITestCalls::xor_selectors().unwrap();
         let expected: [u8; 4] = 0x3dcd3fedu32.to_be_bytes(); // known ITest interface id
         assert_eq!(result, expected);
     }
