@@ -8,9 +8,9 @@ sol!("lib/forge-std/src/interfaces/IERC165.sol");
 /// Calculates XOR of the selectors of a type that implements SolInterface
 pub trait XorSelectors<T: SolInterface> {
     /// get xor of all the selectors.
-    /// 
+    ///
     /// in order to get interface id the array of selectors should include all the functions
-    /// (and only function) selectors of the interface, in alloy and using its sol! macro 
+    /// (and only function) selectors of the interface, in alloy and using its sol! macro
     /// bindings, the generated Calls enum includes all the fn selectors:
     /// `{AlloyContractName}::{AlloyContractNameCalls}`
     ///
