@@ -11,7 +11,6 @@ thiserror = "1.0.56"
 alloy-primitives = "0.6.3"
 alloy-sol-types = { version = "0.6.3", features = ["json"] }
 alloy-ethers-typecast = { git = "https://github.com/rainlanguage/alloy-ethers-typecast", rev = "05b6396271b77a4844c29bf840b7a587be388ff8" }
-anyhow = "1.0.86"
 
 [dev-dependencies]
 tokio = { version = "1.28.0", features = ["full"] }
