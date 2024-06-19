@@ -1,9 +1,16 @@
+use thiserror::Error;
 use alloy_primitives::Address;
 use alloy_sol_types::{sol, SolCall, SolInterface};
 use alloy_ethers_typecast::transaction::{ReadContractParameters, ReadableClientHttp};
 
 // IERC165 contract alloy bindings
 sol!("lib/forge-std/src/interfaces/IERC165.sol");
+
+#[derive(Error, Debug)]
+pub enum XorSelectorsError {
+    #[error("no selectors")]
+    NoSelectors,
+}
 
 /// Calculates XOR of the selectors of a type that implements SolInterface
 pub trait XorSelectors<T: SolInterface> {
@@ -16,10 +23,10 @@ pub trait XorSelectors<T: SolInterface> {
     ///
     /// related info can be found here:
     /// https://eips.ethereum.org/EIPS/eip-165#how-interfaces-are-identified
-    fn xor_selectors() -> anyhow::Result<[u8; 4]> {
+    fn xor_selectors() -> Result<[u8; 4], XorSelectorsError> {
         let selectors = T::selectors().collect::<Vec<_>>();
         if selectors.is_empty() {
-            return Err(anyhow::anyhow!("no selectors"));
+            return Err(XorSelectorsError::NoSelectors);
         }
         let mut result = u32::from_be_bytes(selectors[0]);
         for selector in &selectors[1..] {
