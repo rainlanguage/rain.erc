@@ -1,6 +1,7 @@
 use thiserror::Error;
-use alloy_primitives::Address;
-use alloy_sol_types::{sol, SolCall, SolInterface};
+use alloy::primitives::Address;
+use alloy::sol_types::{SolCall, SolInterface};
+use alloy::sol;
 use alloy_ethers_typecast::transaction::{ReadContractParameters, ReadableClientHttp};
 
 // IERC165 contract alloy bindings
@@ -76,7 +77,7 @@ pub async fn supports_erc165(client: &ReadableClientHttp, contract_address: Addr
 #[cfg(test)]
 mod tests {
     use super::*;
-    use alloy_primitives::hex::decode;
+    use alloy::primitives::hex::decode;
     use httpmock::{Method::POST, MockServer};
     use serde_json::{from_str, Value};
     use alloy_ethers_typecast::{
