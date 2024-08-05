@@ -7,16 +7,16 @@ license = "CAL-1.0"
 repository = "https://github.com/rainlanguage/rain.erc"
 
 [dependencies]
-alloy = { version = "0.2.1", features = ["getrandom"] }
 thiserror = "1.0.56"
-alloy-ethers-typecast = { git = "https://github.com/rainlanguage/alloy-ethers-typecast", rev = "5f46c5aa35c9ad6a25925e8ba7ef9767ac77ca67" }
+alloy = { version = "0.2.1", features = ["rand", "sol-types"] }
+alloy-ethers-typecast = { git = "https://github.com/rainlanguage/alloy-ethers-typecast", rev = "ced1a91f0c1e235dbce235caae4b4528d1504ec2" }
 
 [dev-dependencies]
-tokio = { version = "1.28.0", features = ["full"] }
-httpmock = "0.7.0"
 serde = "1.0.203"
-serde_json = { version = "1.0.117", features = ["raw_value"] }
+httpmock = "0.7.0"
 ethers = { version = "2.0.14" }
+tokio = { version = "1.28.0", features = ["full"] }
+serde_json = { version = "1.0.117", features = ["raw_value"] }
 
 [lib]
 path = "src/lib.rs"
