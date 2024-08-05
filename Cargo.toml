@@ -7,7 +7,7 @@ license = "CAL-1.0"
 repository = "https://github.com/rainlanguage/rain.erc"
 
 [dependencies]
-alloy = { version = "0.2.0", features = ["getrandom"] }
+alloy = { version = "0.2.1", features = ["getrandom"] }
 thiserror = "1.0.56"
 alloy-ethers-typecast = { git = "https://github.com/rainlanguage/alloy-ethers-typecast", rev = "2c09cd1cfe910602fe712f49c9c639418273abe2" }
 
