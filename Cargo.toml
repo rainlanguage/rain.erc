@@ -8,8 +8,8 @@ repository = "https://github.com/rainlanguage/rain.erc"
 
 [dependencies]
 thiserror = "1.0.56"
-alloy = { version = "0.2.1", features = ["rand", "sol-types"] }
-alloy-ethers-typecast = { git = "https://github.com/rainlanguage/alloy-ethers-typecast", rev = "ced1a91f0c1e235dbce235caae4b4528d1504ec2" }
+alloy = { version = "0.1.4", features = ["rand", "sol-types"] }
+alloy-ethers-typecast = { git = "https://github.com/rainlanguage/alloy-ethers-typecast", rev = "0881930a22e84db49ba955c5b88e790e1266ac66" }
 
 [dev-dependencies]
 serde = "1.0.203"
