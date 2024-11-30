@@ -47,6 +47,7 @@ async fn supports_erc165_check1(client: &ReadableClientHttp, contract_address: A
             interfaceID: IERC165::supportsInterfaceCall::SELECTOR.into(),
         },
         block_number: None,
+        gas: None,
     };
     client.read(parameters).await.map(|v| v._0).unwrap_or(false)
 }
@@ -60,6 +61,7 @@ async fn supports_erc165_check2(client: &ReadableClientHttp, contract_address: A
             interfaceID: [0xff, 0xff, 0xff, 0xff].into(),
         },
         block_number: None,
+        gas: None,
     };
     !client.read(parameters).await.map(|v| v._0).unwrap_or(true)
 }
