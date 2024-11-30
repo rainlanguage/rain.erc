@@ -169,7 +169,7 @@ dependencies = [
 [[package]]
 name = "alloy-ethers-typecast"
 version = "0.2.0"
-source = "git+https://github.com/rainlanguage/alloy-ethers-typecast?rev=88b949130dd26be3dc7d514fbdcf15cfa3f79b2a#88b949130dd26be3dc7d514fbdcf15cfa3f79b2a"
+source = "git+https://github.com/rainlanguage/alloy-ethers-typecast?rev=0e636d2bc865a49c6eaea95ab139465708a65698#0e636d2bc865a49c6eaea95ab139465708a65698"
 dependencies = [
  "alloy",
  "async-trait",
