@@ -192,139 +192,91 @@ mod tests {
         assert!(!result);
     }
 
-    // #[tokio::test]
-    // async fn test_supports_erc165() {
-    //     let rpc_server = MockServer::start_async().await;
-    //     let client = ReadableClient::new_from_url(rpc_server.url("/")).unwrap();
+    #[tokio::test]
+    async fn test_supports_erc165_both_checks_pass() {
+        let asserter = Asserter::new();
+        let address = Address::random();
+        // check1 returns true
+        asserter
+            .push_success(&"0x0000000000000000000000000000000000000000000000000000000000000001");
+        // check2 returns false (which means it passes)
+        asserter
+            .push_success(&"0x0000000000000000000000000000000000000000000000000000000000000000");
 
-    //     // Mock a successful response
-    //     let address = Address::random();
-    //     rpc_server.mock(|when, then| {
-    //         when.method(POST)
-    //             .path("/")
-    //             .json_body_partial(
-    //                 Request::<(TypedTransaction, BlockNumber)>::eth_call_request(
-    //                     1,
-    //                     TypedTransaction::Eip1559(
-    //                         AlloyTransactionRequest::new()
-    //                             .with_to(Some(address))
-    //                             .with_data(Some(
-    //                                 decode(
-    //                                     "0x01ffc9a701ffc9a700000000000000000000000000000000000000000000000000000000"
-    //                                 ).unwrap()
-    //                             ))
-    //                             .to_eip1559()
-    //                     ),
-    //                     None
-    //                 )
-    //                 .to_json_string()
-    //                 .unwrap(),
-    //             );
-    //         then.json_body_obj(
-    //             &from_str::<Value>(&Response::new_success(
-    //                 1,
-    //                 "0x0000000000000000000000000000000000000000000000000000000000000001"
-    //             ).to_json_string().unwrap())
-    //             .unwrap(),
-    //         );
-    //     });
-    //     rpc_server.mock(|when, then| {
-    //         when.method(POST)
-    //             .path("/")
-    //             .json_body_partial(
-    //                 Request::<(TypedTransaction, BlockNumber)>::eth_call_request(
-    //                     2,
-    //                     TypedTransaction::Eip1559(
-    //                         AlloyTransactionRequest::new()
-    //                             .with_to(Some(address))
-    //                             .with_data(Some(
-    //                                 decode(
-    //                                     "0x01ffc9a7ffffffff00000000000000000000000000000000000000000000000000000000"
-    //                                 ).unwrap()
-    //                             ))
-    //                             .to_eip1559()
-    //                     ),
-    //                     None
-    //                 )
-    //                 .to_json_string()
-    //                 .unwrap(),
-    //             );
-    //         then.json_body_obj(
-    //             &from_str::<Value>(&Response::new_success(
-    //                 2,
-    //                 "0x0000000000000000000000000000000000000000000000000000000000000000"
-    //             ).to_json_string().unwrap())
-    //             .unwrap(),
-    //         );
-    //     });
-    //     let result = supports_erc165(&client, address).await;
-    //     assert!(result);
+        let client = ReadableClient::new_mocked(asserter);
+        let result = supports_erc165(&client, address).await;
+        assert!(result);
+    }
 
-    //     // Mock an unsuccessful response
-    //     let address = Address::random();
-    //     rpc_server.mock(|when, then| {
-    //         when.method(POST)
-    //             .path("/")
-    //             .json_body_partial(
-    //                 Request::<(TypedTransaction, BlockNumber)>::eth_call_request(
-    //                     3,
-    //                     TypedTransaction::Eip1559(
-    //                         AlloyTransactionRequest::new()
-    //                             .with_to(Some(address))
-    //                             .with_data(Some(
-    //                                 decode(
-    //                                     "0x01ffc9a701ffc9a700000000000000000000000000000000000000000000000000000000"
-    //                                 ).unwrap()
-    //                             ))
-    //                             .to_eip1559()
-    //                     ),
-    //                     None
-    //                 )
-    //                 .to_json_string()
-    //                 .unwrap(),
-    //             );
-    //         then.json_body_obj(
-    //             &from_str::<Value>(&Response::new_success(
-    //                 3,
-    //                 "0x0000000000000000000000000000000000000000000000000000000000000001"
-    //             ).to_json_string().unwrap())
-    //             .unwrap(),
-    //         );
-    //     });
-    //     rpc_server.mock(|when, then| {
-    //         when.method(POST)
-    //             .path("/")
-    //             .json_body_partial(
-    //                 Request::<(TypedTransaction, BlockNumber)>::eth_call_request(
-    //                     4,
-    //                     TypedTransaction::Eip1559(
-    //                         AlloyTransactionRequest::new()
-    //                             .with_to(Some(address))
-    //                             .with_data(Some(
-    //                                 decode(
-    //                                     "0x01ffc9a7ffffffff00000000000000000000000000000000000000000000000000000000"
-    //                                 ).unwrap()
-    //                             ))
-    //                             .to_eip1559()
-    //                     ),
-    //                     None
-    //                 )
-    //                 .to_json_string()
-    //                 .unwrap(),
-    //             );
-    //         then.json_body_obj(
-    //             &from_str::<Value>(&Response::new_error(
-    //                 4,
-    //                 -32003,
-    //                 "execution reverted",
-    //                 Some("0x00"),
-    //             )
-    //             .to_json_string()
-    //             .unwrap())
-    //             .unwrap(),
-    //         );
-    //     });
-    //     let result = supports_erc165(&client, address).await;
-    //     assert!(!result);
-    // }
+    #[tokio::test]
+    async fn test_supports_erc165_check1_fails() {
+        let asserter = Asserter::new();
+        let address = Address::random();
+        // check1 returns false
+        asserter
+            .push_success(&"0x0000000000000000000000000000000000000000000000000000000000000000");
+        // check2 result doesn't matter since check1 already failed
+        asserter
+            .push_success(&"0x0000000000000000000000000000000000000000000000000000000000000000");
+
+        let client = ReadableClient::new_mocked(asserter);
+        let result = supports_erc165(&client, address).await;
+        assert!(!result);
+    }
+
+    #[tokio::test]
+    async fn test_supports_erc165_check2_fails() {
+        let asserter = Asserter::new();
+        let address = Address::random();
+        // check1 returns true
+        asserter
+            .push_success(&"0x0000000000000000000000000000000000000000000000000000000000000001");
+        // check2 returns true (which means it fails)
+        asserter
+            .push_success(&"0x0000000000000000000000000000000000000000000000000000000000000001");
+
+        let client = ReadableClient::new_mocked(asserter);
+        let result = supports_erc165(&client, address).await;
+        assert!(!result);
+    }
+
+    #[tokio::test]
+    async fn test_supports_erc165_check1_reverts() {
+        let asserter = Asserter::new();
+        let address = Address::random();
+        // check1 reverts
+        let error_payload = ErrorPayload {
+            code: -32003,
+            message: "execution reverted".into(),
+            data: Some(serde_json::value::to_raw_value(&json!("0x00")).unwrap()),
+        };
+        asserter.push_failure(error_payload);
+        // check2 result doesn't matter since check1 already failed
+        asserter
+            .push_success(&"0x0000000000000000000000000000000000000000000000000000000000000000");
+
+        let client = ReadableClient::new_mocked(asserter);
+        let result = supports_erc165(&client, address).await;
+        assert!(!result);
+    }
+
+    #[tokio::test]
+    async fn test_supports_erc165_check2_reverts_after_check1_passes() {
+        let asserter = Asserter::new();
+        let address = Address::random();
+        // check1 returns true
+        asserter
+            .push_success(&"0x0000000000000000000000000000000000000000000000000000000000000001");
+        // check2 reverts
+        let error_payload = ErrorPayload {
+            code: -32003,
+            message: "execution reverted".into(),
+            data: Some(serde_json::value::to_raw_value(&json!("0x00")).unwrap()),
+        };
+        asserter.push_failure(error_payload);
+
+        let client = ReadableClient::new_mocked(asserter);
+        let result = supports_erc165(&client, address).await;
+        assert!(!result);
+    }
 }
