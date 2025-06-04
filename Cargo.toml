@@ -9,7 +9,7 @@ repository = "https://github.com/rainlanguage/rain.erc"
 [dependencies]
 thiserror = "1.0.56"
 alloy = { version = "1.0.9", features = ["rand", "sol-types"] }
-alloy-ethers-typecast = { git = "https://github.com/rainlanguage/alloy-ethers-typecast", rev = "7d0491f471245f00e2649c8ae8bdf741183151fa" }
+alloy-ethers-typecast = { git = "https://github.com/rainlanguage/alloy-ethers-typecast", rev = "b37a0a068606444b5ecbc6fcde5a8a7d27128943" }
 
 [dev-dependencies]
 serde = "1.0.203"
