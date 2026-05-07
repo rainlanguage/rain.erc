@@ -103,6 +103,20 @@ mod tests {
         }
     }
 
+    sol! {
+        // Interface with exactly one function — exercises the
+        // single-selector branch of xor_selectors (the loop body
+        // never runs, the result is just that one selector).
+        interface IOne {
+            function only() external;
+        }
+    }
+
+    // No empty-interface fixture: the `sol!` macro does not generate
+    // a `Calls` enum for an interface with zero functions, so the
+    // `XorSelectorsError::NoSelectors` branch is only reachable via a
+    // hand-rolled `SolInterface` impl. It stays as a defensive guard.
+
     fn mocked_provider(asserter: Asserter) -> impl Provider {
         ProviderBuilder::new().connect_mocked_client(asserter)
     }
@@ -125,6 +139,16 @@ mod tests {
         let expected: [u8; 4] = 0x3dcd3fedu32.to_be_bytes(); // known ITest interface id
         assert_eq!(result, expected);
     }
+
+    #[test]
+    fn test_xor_selectors_single_selector_returns_that_selector() {
+        // Single-function interface: the result must equal that one
+        // function's selector unchanged (no XOR partner).
+        let result = IOne::IOneCalls::xor_selectors().unwrap();
+        let expected = IOne::onlyCall::SELECTOR;
+        assert_eq!(result, expected);
+    }
+
 
     #[tokio::test]
     async fn test_supports_erc165_check1_true_response() {
