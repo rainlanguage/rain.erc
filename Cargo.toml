@@ -13,9 +13,18 @@ alloy = { version = "1.0.9", features = [
   "sol-types",
   "providers",
   "contract",
-  "network",
-  "transport-http",
   "json-rpc",
+] }
+
+[target.'cfg(target_family = "wasm")'.dependencies]
+# alloy's `providers` feature pulls in `getrandom` transitively. Both
+# major versions are reachable in the dep graph and each has its own
+# wasm-routing feature: 0.2 calls it `js`, 0.3 calls it `wasm_js`.
+# Without these, wasm32-unknown-unknown builds fail with
+# "the wasm*-unknown-unknown targets are not supported by default".
+getrandom_02 = { package = "getrandom", version = "0.2", features = ["js"] }
+getrandom_03 = { package = "getrandom", version = "0.3", features = [
+  "wasm_js",
 ] }
 
 [dev-dependencies]
