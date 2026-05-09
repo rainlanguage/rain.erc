@@ -24,14 +24,16 @@ pub enum XorSelectorsError {
 /// Non-revert errors from an ERC-165 probe.
 ///
 /// The ERC-165 spec collapses execution reverts into "interface not
-/// supported" — those stay as `Ok(false)` from the probe. Anything
-/// else (RPC transport failure, response decode failure, missing
-/// contract) is a real failure mode the caller needs to see, so it
-/// is surfaced as `Err`.
+/// supported" — those stay as `Ok(false)` from the probe. The
+/// "called address has no code / returned empty calldata" case is
+/// also folded into `Ok(false)` for the same reason. Anything else
+/// (RPC transport failure, response decode failure) is a real
+/// failure mode the caller needs to see, so it is surfaced as `Err`.
 #[derive(Error, Debug)]
 pub enum Erc165Error {
     /// The underlying contract call failed for a reason other than
-    /// the contract reverting (transport, decode, no-data, …).
+    /// the contract reverting or returning empty calldata
+    /// (transport, decode, …).
     #[error(transparent)]
     Call(#[from] ContractError),
 }
@@ -122,7 +124,8 @@ async fn supports_erc165_check2<P: Provider>(
 ///
 /// Returns `Ok(true)` if both spec-mandated probes pass, `Ok(false)`
 /// if either probe says "not supported" (including via revert per
-/// spec), `Err` if a non-revert failure (transport, decode, no-data)
+/// spec, including via `ZeroData` for empty calldata responses),
+/// `Err` if a non-revert failure (transport or decode)
 /// prevented us from finishing the probe — callers can treat that as
 /// "answer unknown" rather than silently reading "no support".
 pub async fn supports_erc165<P: Provider>(
@@ -289,6 +292,21 @@ mod tests {
             .await
             .unwrap_err();
         assert!(matches!(err, Erc165Error::Call(_)));
+    }
+
+    #[tokio::test]
+    async fn test_supports_erc165_check1_zero_data_response() {
+        // An eth_call success with empty calldata (`"0x"`) — typical
+        // when the destination address has no code — must be treated
+        // as "interface not supported" via the ContractError::ZeroData
+        // branch of is_revert_like, not propagated as Err.
+        let asserter = Asserter::new();
+        let address = Address::random();
+        asserter.push_success(&"0x");
+
+        let provider = mocked_provider(asserter);
+        let result = supports_erc165_check1(&provider, address).await.unwrap();
+        assert!(!result);
     }
 
     #[tokio::test]
