@@ -1,3 +1,4 @@
+use alloy::contract::Error as ContractError;
 use alloy::primitives::Address;
 use alloy::providers::Provider;
 use alloy::sol;
@@ -18,6 +19,31 @@ sol!(
 pub enum XorSelectorsError {
     #[error("no selectors")]
     NoSelectors,
+}
+
+/// Non-revert errors from an ERC-165 probe.
+///
+/// The ERC-165 spec collapses execution reverts into "interface not
+/// supported" — those stay as `Ok(false)` from the probe. The
+/// "called address has no code / returned empty calldata" case is
+/// also folded into `Ok(false)` for the same reason. Anything else
+/// (RPC transport failure, response decode failure) is a real
+/// failure mode the caller needs to see, so it is surfaced as `Err`.
+#[derive(Error, Debug)]
+pub enum Erc165Error {
+    /// The underlying contract call failed for a reason other than
+    /// the contract reverting or returning empty calldata
+    /// (transport, decode, …).
+    #[error(transparent)]
+    Call(#[from] ContractError),
+}
+
+/// True iff `e` represents the contract executing the call and
+/// reverting (with or without revert data), or the destination
+/// returning empty calldata. Per ERC-165 these are equivalent to
+/// "interface not supported".
+fn is_revert_like(e: &ContractError) -> bool {
+    e.as_revert_data().is_some() || matches!(e, ContractError::ZeroData(_, _))
 }
 
 /// Calculates XOR of the selectors of a type that implements SolInterface
@@ -45,42 +71,71 @@ pub trait XorSelectors<T: SolInterface> {
 }
 impl<T: SolInterface> XorSelectors<T> for T {}
 
-/// the first check for checking if a contract supports erc165
-async fn supports_erc165_check1<P: Provider>(provider: &P, contract_address: Address) -> bool {
+/// the first check for checking if a contract supports erc165:
+/// the contract claims it supports the IERC165 interface itself
+/// (interfaceID = 0x01ffc9a7).
+///
+/// Returns `Ok(true)` when the call succeeded and the contract
+/// returned `true`; `Ok(false)` when the call succeeded with `false`
+/// or reverted (per spec); `Err` for anything else.
+async fn supports_erc165_check1<P: Provider>(
+    provider: &P,
+    contract_address: Address,
+) -> Result<bool, Erc165Error> {
     let contract = IERC165::new(contract_address, provider);
-    // equates to 0x01ffc9a701ffc9a700000000000000000000000000000000000000000000000000000000
-    contract
+    match contract
         .supportsInterface(IERC165::supportsInterfaceCall::SELECTOR.into())
         .call()
         .await
-        // NOTE: the ERC-165 spec states that if this call fails then it is not supported, however,
-        // it likely refers to the case where the contract call fails and the unwrap_or here can
-        // be due to another issue, e.g. connection error.
-        .unwrap_or(false)
+    {
+        Ok(v) => Ok(v),
+        Err(e) if is_revert_like(&e) => Ok(false),
+        Err(e) => Err(e.into()),
+    }
 }
 
-/// the second check for checking if a contract supports erc165
-async fn supports_erc165_check2<P: Provider>(provider: &P, contract_address: Address) -> bool {
+/// the second check for checking if a contract supports erc165:
+/// the contract claims it does NOT support the all-ones sentinel
+/// interface (interfaceID = 0xffffffff).
+///
+/// Returns `Ok(true)` when the contract correctly returned `false`
+/// (so check2 passes); `Ok(false)` when it returned `true` or
+/// reverted (per spec); `Err` for anything else.
+async fn supports_erc165_check2<P: Provider>(
+    provider: &P,
+    contract_address: Address,
+) -> Result<bool, Erc165Error> {
     let contract = IERC165::new(contract_address, provider);
-    // equates to 0x01ffc9a7ffffffff00000000000000000000000000000000000000000000000000000000
-    !contract
+    match contract
         .supportsInterface([0xff, 0xff, 0xff, 0xff].into())
         .call()
         .await
-        // NOTE: the ERC-165 spec states that if this call fails then it is not supported, however,
-        // it likely refers to the case where the contract call fails and the unwrap_or here can
-        // be due to another issue, e.g. connection error.
-        .unwrap_or(true)
+    {
+        Ok(v) => Ok(!v),
+        Err(e) if is_revert_like(&e) => Ok(false),
+        Err(e) => Err(e.into()),
+    }
 }
 
 /// checks if the given contract implements ERC165
 /// the process is done as described in ERC165 specs:
 ///
 /// https://eips.ethereum.org/EIPS/eip-165#how-to-detect-if-a-contract-implements-erc-165
-pub async fn supports_erc165<P: Provider>(provider: &P, contract_address: Address) -> bool {
-    let check1 = supports_erc165_check1(provider, contract_address);
-    let check2 = supports_erc165_check2(provider, contract_address);
-    check1.await && check2.await
+///
+/// Returns `Ok(true)` if both spec-mandated probes pass, `Ok(false)`
+/// if either probe says "not supported" (including via revert per
+/// spec, including via `ZeroData` for empty calldata responses),
+/// `Err` if a non-revert failure (transport or decode)
+/// prevented us from finishing the probe — callers can treat that as
+/// "answer unknown" rather than silently reading "no support".
+pub async fn supports_erc165<P: Provider>(
+    provider: &P,
+    contract_address: Address,
+) -> Result<bool, Erc165Error> {
+    if !supports_erc165_check1(provider, contract_address).await? {
+        return Ok(false);
+    }
+    supports_erc165_check2(provider, contract_address).await
 }
 
 #[cfg(test)]
@@ -139,6 +194,18 @@ mod tests {
         }
     }
 
+    /// A non-revert-shaped JSON-RPC error: no `data` field, so
+    /// `Error::as_revert_data()` returns `None` and `is_revert_like`
+    /// is false. Stand-in for transport / RPC failures that the
+    /// probe should propagate as `Err`.
+    fn transport_error_payload() -> ErrorPayload {
+        ErrorPayload {
+            code: -32603,
+            message: "internal error".into(),
+            data: None,
+        }
+    }
+
     #[test]
     fn test_get_interface_id() {
         let result = IERC165::IERC165Calls::xor_selectors().unwrap();
@@ -185,7 +252,7 @@ mod tests {
             .push_success(&"0x0000000000000000000000000000000000000000000000000000000000000001");
 
         let provider = mocked_provider(asserter);
-        let result = supports_erc165_check1(&provider, address).await;
+        let result = supports_erc165_check1(&provider, address).await.unwrap();
         assert!(result);
     }
 
@@ -197,7 +264,7 @@ mod tests {
             .push_success(&"0x0000000000000000000000000000000000000000000000000000000000000000");
 
         let provider = mocked_provider(asserter);
-        let result = supports_erc165_check1(&provider, address).await;
+        let result = supports_erc165_check1(&provider, address).await.unwrap();
         assert!(!result);
     }
 
@@ -208,7 +275,37 @@ mod tests {
         asserter.push_failure(revert_payload());
 
         let provider = mocked_provider(asserter);
-        let result = supports_erc165_check1(&provider, address).await;
+        let result = supports_erc165_check1(&provider, address).await.unwrap();
+        assert!(!result);
+    }
+
+    #[tokio::test]
+    async fn test_supports_erc165_check1_transport_error_propagates() {
+        // A non-revert error (no `data` on the JSON-RPC error) must
+        // surface as Err, not get silently collapsed to Ok(false).
+        let asserter = Asserter::new();
+        let address = Address::random();
+        asserter.push_failure(transport_error_payload());
+
+        let provider = mocked_provider(asserter);
+        let err = supports_erc165_check1(&provider, address)
+            .await
+            .unwrap_err();
+        assert!(matches!(err, Erc165Error::Call(_)));
+    }
+
+    #[tokio::test]
+    async fn test_supports_erc165_check1_zero_data_response() {
+        // An eth_call success with empty calldata (`"0x"`) — typical
+        // when the destination address has no code — must be treated
+        // as "interface not supported" via the ContractError::ZeroData
+        // branch of is_revert_like, not propagated as Err.
+        let asserter = Asserter::new();
+        let address = Address::random();
+        asserter.push_success(&"0x");
+
+        let provider = mocked_provider(asserter);
+        let result = supports_erc165_check1(&provider, address).await.unwrap();
         assert!(!result);
     }
 
@@ -220,7 +317,7 @@ mod tests {
             .push_success(&"0x0000000000000000000000000000000000000000000000000000000000000000");
 
         let provider = mocked_provider(asserter);
-        let result = supports_erc165_check2(&provider, address).await;
+        let result = supports_erc165_check2(&provider, address).await.unwrap();
         assert!(result);
     }
 
@@ -232,7 +329,7 @@ mod tests {
             .push_success(&"0x0000000000000000000000000000000000000000000000000000000000000001");
 
         let provider = mocked_provider(asserter);
-        let result = supports_erc165_check2(&provider, address).await;
+        let result = supports_erc165_check2(&provider, address).await.unwrap();
         assert!(!result);
     }
 
@@ -243,8 +340,23 @@ mod tests {
         asserter.push_failure(revert_payload());
 
         let provider = mocked_provider(asserter);
-        let result = supports_erc165_check2(&provider, address).await;
+        let result = supports_erc165_check2(&provider, address).await.unwrap();
         assert!(!result);
+    }
+
+    #[tokio::test]
+    async fn test_supports_erc165_check2_transport_error_propagates() {
+        // Same shape as the check1 transport-error test: anything
+        // that isn't a revert must come back as Err.
+        let asserter = Asserter::new();
+        let address = Address::random();
+        asserter.push_failure(transport_error_payload());
+
+        let provider = mocked_provider(asserter);
+        let err = supports_erc165_check2(&provider, address)
+            .await
+            .unwrap_err();
+        assert!(matches!(err, Erc165Error::Call(_)));
     }
 
     #[tokio::test]
@@ -259,7 +371,7 @@ mod tests {
             .push_success(&"0x0000000000000000000000000000000000000000000000000000000000000000");
 
         let provider = mocked_provider(asserter);
-        let result = supports_erc165(&provider, address).await;
+        let result = supports_erc165(&provider, address).await.unwrap();
         assert!(result);
     }
 
@@ -275,7 +387,7 @@ mod tests {
             .push_success(&"0x0000000000000000000000000000000000000000000000000000000000000000");
 
         let provider = mocked_provider(asserter);
-        let result = supports_erc165(&provider, address).await;
+        let result = supports_erc165(&provider, address).await.unwrap();
         assert!(!result);
     }
 
@@ -291,7 +403,7 @@ mod tests {
             .push_success(&"0x0000000000000000000000000000000000000000000000000000000000000001");
 
         let provider = mocked_provider(asserter);
-        let result = supports_erc165(&provider, address).await;
+        let result = supports_erc165(&provider, address).await.unwrap();
         assert!(!result);
     }
 
@@ -306,7 +418,7 @@ mod tests {
             .push_success(&"0x0000000000000000000000000000000000000000000000000000000000000000");
 
         let provider = mocked_provider(asserter);
-        let result = supports_erc165(&provider, address).await;
+        let result = supports_erc165(&provider, address).await.unwrap();
         assert!(!result);
     }
 
@@ -321,7 +433,35 @@ mod tests {
         asserter.push_failure(revert_payload());
 
         let provider = mocked_provider(asserter);
-        let result = supports_erc165(&provider, address).await;
+        let result = supports_erc165(&provider, address).await.unwrap();
         assert!(!result);
+    }
+
+    #[tokio::test]
+    async fn test_supports_erc165_propagates_check1_transport_error() {
+        // check1 hits a non-revert error; the whole probe must Err
+        // out rather than silently returning Ok(false).
+        let asserter = Asserter::new();
+        let address = Address::random();
+        asserter.push_failure(transport_error_payload());
+
+        let provider = mocked_provider(asserter);
+        let err = supports_erc165(&provider, address).await.unwrap_err();
+        assert!(matches!(err, Erc165Error::Call(_)));
+    }
+
+    #[tokio::test]
+    async fn test_supports_erc165_propagates_check2_transport_error() {
+        // check1 succeeds (true), check2 hits a non-revert error.
+        // The probe must propagate the Err from check2.
+        let asserter = Asserter::new();
+        let address = Address::random();
+        asserter
+            .push_success(&"0x0000000000000000000000000000000000000000000000000000000000000001");
+        asserter.push_failure(transport_error_payload());
+
+        let provider = mocked_provider(asserter);
+        let err = supports_erc165(&provider, address).await.unwrap_err();
+        assert!(matches!(err, Erc165Error::Call(_)));
     }
 }
