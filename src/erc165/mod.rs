@@ -149,7 +149,6 @@ mod tests {
         assert_eq!(result, expected);
     }
 
-
     #[tokio::test]
     async fn test_supports_erc165_check1_true_response() {
         let asserter = Asserter::new();
