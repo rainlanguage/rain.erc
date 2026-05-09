@@ -112,6 +112,16 @@ mod tests {
         }
     }
 
+    sol! {
+        // Interface with exactly two functions — exercises the
+        // single-iteration of the XOR loop (initial selector XOR'd
+        // with one more, no further partners).
+        interface ITwo {
+            function first() external;
+            function second(uint256 v) external;
+        }
+    }
+
     // No empty-interface fixture: the `sol!` macro does not generate
     // a `Calls` enum for an interface with zero functions, so the
     // `XorSelectorsError::NoSelectors` branch is only reachable via a
@@ -147,6 +157,24 @@ mod tests {
         let result = IOne::IOneCalls::xor_selectors().unwrap();
         let expected = IOne::onlyCall::SELECTOR;
         assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_xor_selectors_two_function_interface_xors_both() {
+        // Pin the loop body's correctness: the result must be the
+        // bitwise XOR of the two function selectors. Using
+        // `selectors().collect()` here re-derives independently of the
+        // implementation under test, so a mutation that swaps XOR for
+        // OR / AND / + would diverge from the manual computation.
+        let result = ITwo::ITwoCalls::xor_selectors().unwrap();
+        let selectors = ITwo::ITwoCalls::selectors().collect::<Vec<_>>();
+        assert_eq!(selectors.len(), 2);
+        let manual = u32::from_be_bytes(selectors[0]) ^ u32::from_be_bytes(selectors[1]);
+        assert_eq!(result, manual.to_be_bytes());
+        // Sanity: the answer is not just one selector unchanged
+        // (that would be the single-selector path).
+        assert_ne!(result, selectors[0]);
+        assert_ne!(result, selectors[1]);
     }
 
     #[tokio::test]
