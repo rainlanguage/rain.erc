@@ -138,7 +138,7 @@ pub async fn supports_erc165<P: Provider>(
     supports_erc165_check2(provider, contract_address).await
 }
 
-#[cfg(all(test, not(target_family = "wasm")))]
+#[cfg(test)]
 mod tests {
     use super::XorSelectors;
     use super::*;

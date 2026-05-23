@@ -30,9 +30,7 @@ getrandom_03 = { package = "getrandom", version = "0.3", features = [
 [dev-dependencies]
 serde = "1.0.203"
 serde_json = { version = "1.0.117", features = ["raw_value"] }
-
-[target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
-tokio = { version = "1.28.0", features = ["full"] }
+tokio = { version = "1.28.0", features = ["macros", "rt"] }
 
 [lib]
 path = "src/lib.rs"
