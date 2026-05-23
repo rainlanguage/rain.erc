@@ -5,7 +5,7 @@ on:
       - main
 jobs:
   release:
-    uses: rainlanguage/rainix/.github/workflows/rainix-rs-autopublish.yaml@main
+    uses: rainlanguage/rainix/.github/workflows/rainix-autopublish.yaml@main
     with:
       crate: rain-erc
     secrets: inherit
