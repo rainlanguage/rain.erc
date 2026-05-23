@@ -16,4 +16,6 @@ target
 
 # foundry
 cache
-out.pre-commit-config.yaml
+out
+
+.pre-commit-config.yaml
