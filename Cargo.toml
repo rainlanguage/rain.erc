@@ -1,6 +1,6 @@
 [package]
 name = "rain-erc"
-version = "0.0.0"
+version = "0.1.0"
 edition = "2021"
 description = "Provides ERC related utitlies in rust"
 license = "CAL-1.0"
