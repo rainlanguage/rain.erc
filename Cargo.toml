@@ -8,8 +8,10 @@ repository = "https://github.com/rainlanguage/rain.erc"
 
 [dependencies]
 thiserror = "1.0.56"
+serde = { version = "1.0.203", features = ["derive"] }
 alloy = { version = "1.0.9", features = [
   "rand",
+  "serde",
   "sol-types",
   "providers",
   "contract",
@@ -28,7 +30,6 @@ getrandom_03 = { package = "getrandom", version = "0.3", features = [
 ] }
 
 [dev-dependencies]
-serde = "1.0.203"
 serde_json = { version = "1.0.117", features = ["raw_value"] }
 tokio = { version = "1.28.0", features = ["macros", "rt"] }
 
