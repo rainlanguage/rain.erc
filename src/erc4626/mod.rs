@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: CAL-1.0
+// SPDX-FileCopyrightText: Copyright (c) 2024 Rain Open Source Software Ltd
+
 use alloy::contract::Error as ContractError;
 use alloy::network::Network;
 use alloy::primitives::{Address, U256};
@@ -44,7 +47,6 @@ pub struct Erc4626ShareAssetConversion {
 pub struct Erc4626BatchVault {
     pub vault_address: Address,
     pub shares: Option<U256>,
-    pub expected_asset_address: Option<Address>,
 }
 
 impl Erc4626BatchVault {
@@ -52,17 +54,11 @@ impl Erc4626BatchVault {
         Self {
             vault_address,
             shares: None,
-            expected_asset_address: None,
         }
     }
 
     pub const fn with_shares(mut self, shares: U256) -> Self {
         self.shares = Some(shares);
-        self
-    }
-
-    pub const fn with_expected_asset_address(mut self, expected_asset_address: Address) -> Self {
-        self.expected_asset_address = Some(expected_asset_address);
         self
     }
 }
@@ -73,7 +69,6 @@ pub struct Erc4626BatchItem {
     pub vault_address: Address,
     pub success: bool,
     pub data: Option<Erc4626ShareAssetConversion>,
-    pub expected_asset_matches: Option<bool>,
     pub error: Option<String>,
 }
 
@@ -94,14 +89,13 @@ pub enum Erc4626Error {
     Transport(#[from] alloy::transports::TransportError),
     #[error("multicall failed: {0}")]
     Multicall(#[from] MulticallError),
-    #[error("decimal formatting failed: decimals {decimals} exceed supported size")]
-    DecimalFormatting { decimals: u8 },
+    #[error("decimal scale overflow for decimals {decimals}")]
+    DecimalScaleOverflow { decimals: u8 },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct BatchState {
     vault_address: Address,
-    expected_asset_address: Option<Address>,
     share_decimals: Option<u8>,
     asset_address: Option<Address>,
     asset_decimals: Option<u8>,
@@ -114,7 +108,6 @@ impl BatchState {
     fn new(input: &Erc4626BatchVault) -> Self {
         Self {
             vault_address: input.vault_address,
-            expected_asset_address: input.expected_asset_address,
             share_decimals: None,
             asset_address: None,
             asset_decimals: None,
@@ -130,12 +123,7 @@ impl BatchState {
         }
     }
 
-    fn into_item(self) -> Result<Erc4626BatchItem, Erc4626Error> {
-        let expected_asset_matches = self
-            .expected_asset_address
-            .zip(self.asset_address)
-            .map(|(expected, actual)| expected == actual);
-
+    fn into_item(self) -> Erc4626BatchItem {
         let mut error = self.error;
         let data = match (
             self.share_decimals,
@@ -175,13 +163,12 @@ impl BatchState {
             (None, false) => None,
         };
 
-        Ok(Erc4626BatchItem {
+        Erc4626BatchItem {
             vault_address: self.vault_address,
             success: error.is_none(),
             data,
-            expected_asset_matches,
             error,
-        })
+        }
     }
 }
 
@@ -208,10 +195,7 @@ where
         read_converted_assets(provider, block_id, multicall3_address, &mut states).await?;
     }
 
-    let items = states
-        .into_iter()
-        .map(BatchState::into_item)
-        .collect::<Result<Vec<_>, _>>()?;
+    let items = states.into_iter().map(BatchState::into_item).collect();
 
     Ok(Erc4626BatchResponse {
         block_number,
@@ -337,7 +321,10 @@ where
     for state in states.iter_mut() {
         if state.error.is_none() && state.shares.is_none() {
             if let Some(share_decimals) = state.share_decimals {
-                state.shares = Some(U256::from(10).pow(U256::from(share_decimals)));
+                match decimal_scale(share_decimals) {
+                    Ok(shares) => state.shares = Some(shares),
+                    Err(err) => state.set_error(err.to_string()),
+                }
             }
         }
     }
@@ -498,11 +485,7 @@ fn build_conversion(
 }
 
 fn format_units(value: U256, decimals: u8) -> Result<String, Erc4626Error> {
-    let scale = U256::from(10).pow(U256::from(decimals));
-    if scale.is_zero() {
-        return Err(Erc4626Error::DecimalFormatting { decimals });
-    }
-
+    let scale = decimal_scale(decimals)?;
     let whole = value / scale;
     let fractional = value % scale;
     if fractional.is_zero() {
@@ -512,7 +495,7 @@ fn format_units(value: U256, decimals: u8) -> Result<String, Erc4626Error> {
     let width = usize::from(decimals);
     let mut fractional = fractional.to_string();
     if fractional.len() > width {
-        return Err(Erc4626Error::DecimalFormatting { decimals });
+        return Err(Erc4626Error::DecimalScaleOverflow { decimals });
     }
     let padding = width - fractional.len();
     if padding > 0 {
@@ -520,6 +503,12 @@ fn format_units(value: U256, decimals: u8) -> Result<String, Erc4626Error> {
     }
     let fractional = fractional.trim_end_matches('0');
     Ok(format!("{whole}.{fractional}"))
+}
+
+fn decimal_scale(decimals: u8) -> Result<U256, Erc4626Error> {
+    U256::from(10)
+        .checked_pow(U256::from(decimals))
+        .ok_or(Erc4626Error::DecimalScaleOverflow { decimals })
 }
 
 fn multicall_failure(label: &str, failure: Failure) -> String {
@@ -612,8 +601,8 @@ mod tests {
         let response = batch_share_ratios(
             &mocked_provider(asserter),
             vec![
-                Erc4626BatchVault::new(vault1).with_expected_asset_address(asset1),
-                Erc4626BatchVault::new(vault2).with_expected_asset_address(asset2),
+                Erc4626BatchVault::new(vault1),
+                Erc4626BatchVault::new(vault2),
             ],
             None,
         )
@@ -624,7 +613,6 @@ mod tests {
         assert_eq!(response.block_timestamp, 456);
         assert_eq!(response.items.len(), 2);
         assert!(response.items[0].success);
-        assert_eq!(response.items[0].expected_asset_matches, Some(true));
         let data = response.items[0].data.as_ref().unwrap();
         assert_eq!(data.share_token_address, vault1);
         assert_eq!(data.asset_address, asset1);
@@ -733,5 +721,24 @@ mod tests {
         assert_eq!(format_units(U256::from(1_500_000u64), 6).unwrap(), "1.5");
         assert_eq!(format_units(U256::from(1_000_000u64), 6).unwrap(), "1");
         assert_eq!(format_units(U256::from(1u64), 6).unwrap(), "0.000001");
+    }
+
+    #[test]
+    fn test_decimal_scale() {
+        assert_eq!(
+            decimal_scale(18).unwrap(),
+            U256::from(10).pow(U256::from(18))
+        );
+
+        let err = decimal_scale(u8::MAX).unwrap_err();
+        assert!(matches!(
+            err,
+            Erc4626Error::DecimalScaleOverflow { decimals: u8::MAX }
+        ));
+    }
+
+    #[test]
+    fn test_format_units_rejects_scale_overflow() {
+        assert!(format_units(U256::from(1u64), u8::MAX).is_err());
     }
 }
