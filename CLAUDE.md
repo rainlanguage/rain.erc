@@ -6,13 +6,18 @@ code in this repository.
 ## Project Overview
 
 `rain-erc` is a pure-Rust crate of ERC-related utilities for the Rain Protocol
-ecosystem. Currently contains one module:
+ecosystem. Current modules:
 
 - `erc165` — probe arbitrary contracts for `IERC165` support against any
   `alloy::providers::Provider`. Spec-compliant: execution reverts on the probe
   count as "interface not supported" per
   [EIP-165](https://eips.ethereum.org/EIPS/eip-165); only RPC / decoding errors
   are returned as `Err`.
+- `erc4626` — read ERC-4626 vault/share-token metadata and share-to-asset ratios
+  against any `alloy::providers::Provider`. Batch reads use Alloy's Multicall3
+  builder grouped by return type, pin all contract reads to a captured block,
+  and return block number, block timestamp, captured-at time, and per-vault
+  success/error items.
 
 No Solidity, no submodules, no path-deps. Everything else (alloy, thiserror) is
 on crates.io.
@@ -51,6 +56,18 @@ nix develop -c cargo test test_name
 Tests use `alloy::providers::mock::Asserter` driven by
 `ProviderBuilder::new().connect_mocked_client(asserter)`. No real network calls;
 no submodules.
+
+### `src/erc4626/mod.rs`
+
+- `batch_share_ratios(provider, vaults, multicall3_address)` — captures the
+  latest block number, reads the block timestamp through Multicall3 at that
+  block, then batches ERC-4626/ERC-20 metadata and `convertToAssets` calls
+  through Alloy's Multicall3 builder pinned to the captured block.
+- `Erc4626BatchVault` — per-vault input with optional custom share amount and
+  optional expected asset address.
+- `Erc4626BatchResponse` — block metadata plus per-vault items. Individual vault
+  call failures become item errors; global provider/multicall failures return
+  `Err`.
 
 ## CI
 

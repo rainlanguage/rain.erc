@@ -12,6 +12,10 @@ ERC-related utilities for the Rain Protocol ecosystem, in Rust.
   "interface not supported", per
   [EIP-165](https://eips.ethereum.org/EIPS/eip-165)) from genuine RPC / decoding
   errors (returned as `Err`). Works against any `alloy::providers::Provider`.
+- `erc4626` — Read ERC-4626 vault/share-token metadata and share-to-asset
+  ratios. Batch reads use Alloy's Multicall3 builder, pin all contract reads to
+  a captured block, and return block metadata plus per-vault success/error
+  items.
 
 ## Install
 
@@ -33,6 +37,22 @@ let contract: Address = "0x...".parse()?;
 if supports_erc165(&provider, contract).await? {
     // contract responds correctly to ERC-165 probes
 }
+```
+
+```rust
+use alloy::primitives::Address;
+use alloy::providers::ProviderBuilder;
+use rain_erc::erc4626::{batch_share_ratios, Erc4626BatchVault};
+
+let provider = ProviderBuilder::new().connect_http("https://...".parse()?);
+let vault: Address = "0x...".parse()?;
+
+let response = batch_share_ratios(
+    &provider,
+    vec![Erc4626BatchVault::new(vault)],
+    None,
+)
+.await?;
 ```
 
 ## Develop
