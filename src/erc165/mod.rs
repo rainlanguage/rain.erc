@@ -177,10 +177,57 @@ mod tests {
         }
     }
 
-    // No empty-interface fixture: the `sol!` macro does not generate
-    // a `Calls` enum for an interface with zero functions, so the
+    // The `sol!` macro does not generate a `Calls` enum for an
+    // interface with zero functions, so the
     // `XorSelectorsError::NoSelectors` branch is only reachable via a
-    // hand-rolled `SolInterface` impl. It stays as a defensive guard.
+    // hand-rolled `SolInterface` whose `selectors()` is empty. This
+    // uninhabited type provides exactly that: `COUNT == 0`, so
+    // `selectors()` yields no items and `xor_selectors` must hit the
+    // empty guard.
+    enum EmptyInterface {}
+
+    impl SolInterface for EmptyInterface {
+        const NAME: &'static str = "EmptyInterface";
+        const MIN_DATA_LENGTH: usize = 0;
+        const COUNT: usize = 0;
+
+        fn selector(&self) -> [u8; 4] {
+            match *self {}
+        }
+
+        fn selector_at(_i: usize) -> Option<[u8; 4]> {
+            None
+        }
+
+        fn valid_selector(_selector: [u8; 4]) -> bool {
+            false
+        }
+
+        fn abi_decode_raw(_selector: [u8; 4], _data: &[u8]) -> alloy::sol_types::Result<Self> {
+            Err(alloy::sol_types::Error::UnknownSelector {
+                name: Self::NAME,
+                selector: [0; 4].into(),
+            })
+        }
+
+        fn abi_decode_raw_validate(
+            _selector: [u8; 4],
+            _data: &[u8],
+        ) -> alloy::sol_types::Result<Self> {
+            Err(alloy::sol_types::Error::UnknownSelector {
+                name: Self::NAME,
+                selector: [0; 4].into(),
+            })
+        }
+
+        fn abi_encoded_size(&self) -> usize {
+            match *self {}
+        }
+
+        fn abi_encode_raw(&self, _out: &mut Vec<u8>) {
+            match *self {}
+        }
+    }
 
     fn mocked_provider(asserter: Asserter) -> impl Provider {
         ProviderBuilder::new().connect_mocked_client(asserter)
@@ -242,6 +289,18 @@ mod tests {
         // (that would be the single-selector path).
         assert_ne!(result, selectors[0]);
         assert_ne!(result, selectors[1]);
+    }
+
+    #[test]
+    fn test_xor_selectors_empty_interface_errors() {
+        // An interface with no selectors must yield the NoSelectors
+        // error rather than indexing `selectors[0]` (which would panic)
+        // or returning some default. Pins the `selectors.is_empty()`
+        // guard and its exact error variant — a mutant that drops the
+        // guard would panic on the empty-slice index, and one that
+        // returns a different error variant is caught by the match.
+        let err = EmptyInterface::xor_selectors().unwrap_err();
+        assert!(matches!(err, XorSelectorsError::NoSelectors));
     }
 
     #[tokio::test]
