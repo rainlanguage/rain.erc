@@ -741,4 +741,151 @@ mod tests {
     fn test_format_units_rejects_scale_overflow() {
         assert!(format_units(U256::from(1u64), u8::MAX).is_err());
     }
+
+    // A BatchState carrying every field populated with valid data, so
+    // `into_item` takes the success path. Individual tests clear one
+    // field (or pre-seed an error) to drive a single branch of the
+    // error-precedence state machine.
+    fn complete_state() -> BatchState {
+        BatchState {
+            vault_address: Address::repeat_byte(0x11),
+            share_decimals: Some(18),
+            asset_address: Some(Address::repeat_byte(0xaa)),
+            asset_decimals: Some(6),
+            shares: Some(U256::from(10).pow(U256::from(18))),
+            assets: Some(U256::from(1_500_000u64)),
+            error: None,
+        }
+    }
+
+    #[test]
+    fn test_set_error_keeps_first() {
+        // set_error is first-wins: a later error must not clobber an
+        // earlier one. Pins the `if self.error.is_none()` guard.
+        let mut state = complete_state();
+        state.set_error("first");
+        state.set_error("second");
+        assert_eq!(state.error.as_deref(), Some("first"));
+    }
+
+    #[test]
+    fn test_set_error_sets_when_empty() {
+        // The other side of the guard: an empty error slot does get
+        // filled. Without this, a mutant that no-ops set_error entirely
+        // would survive the first-wins test above.
+        let mut state = complete_state();
+        assert!(state.error.is_none());
+        state.set_error("only");
+        assert_eq!(state.error.as_deref(), Some("only"));
+    }
+
+    #[test]
+    fn test_into_item_complete_state_succeeds() {
+        // All fields present, no error: success with populated data and
+        // no error string. Anchors the (None, false) arm and the
+        // success path of the value match.
+        let item = complete_state().into_item();
+        assert!(item.success);
+        assert!(item.error.is_none());
+        let data = item.data.as_ref().unwrap();
+        assert_eq!(data.share_token_address, Address::repeat_byte(0x11));
+        assert_eq!(data.share_token_decimals, 18);
+        assert_eq!(data.asset_address, Address::repeat_byte(0xaa));
+        assert_eq!(data.asset_decimals, 6);
+        assert_eq!(data.shares, U256::from(10).pow(U256::from(18)));
+        assert_eq!(data.assets, U256::from(1_500_000u64));
+        assert_eq!(data.shares_display, "1");
+        assert_eq!(data.assets_display, "1.5");
+    }
+
+    #[test]
+    fn test_into_item_incomplete_without_error_synthesizes_message() {
+        // A state that completed its reads without an explicit error but
+        // is missing a field (here `assets`) must NOT silently report
+        // success: into_item synthesizes the sentinel error and marks
+        // the item failed. Pins the `(None, true)` arm and its exact
+        // message — a mutant that drops the synthesized error (returns
+        // None) or changes the string is killed.
+        let mut state = complete_state();
+        state.assets = None;
+        let item = state.into_item();
+        assert!(!item.success);
+        assert!(item.data.is_none());
+        assert_eq!(
+            item.error.as_deref(),
+            Some("Incomplete ERC4626 batch result")
+        );
+    }
+
+    #[test]
+    fn test_into_item_existing_error_takes_precedence_over_synthesized() {
+        // When a real error was already recorded AND data is missing,
+        // the recorded error must win over the synthesized "Incomplete"
+        // sentinel. Distinguishes the `(Some, true)` arm from the
+        // `(None, true)` arm.
+        let mut state = complete_state();
+        state.assets = None;
+        state.set_error("asset call failed at index 3");
+        let item = state.into_item();
+        assert!(!item.success);
+        assert!(item.data.is_none());
+        assert_eq!(item.error.as_deref(), Some("asset call failed at index 3"));
+    }
+
+    #[test]
+    fn test_into_item_error_present_with_data_reports_failure() {
+        // A pre-seeded error must survive even when every field is
+        // present and a conversion could be built: the item reports
+        // failure and surfaces the recorded error. Pins the
+        // error-wins precedence (the `(Some(error), _)` arm) — a mutant
+        // that drops the error whenever data exists is killed. Whether
+        // `data` is populated alongside is an implementation detail this
+        // test deliberately does not constrain.
+        let mut state = complete_state();
+        state.set_error("share decimals call failed at index 0");
+        let item = state.into_item();
+        assert!(!item.success);
+        assert_eq!(
+            item.error.as_deref(),
+            Some("share decimals call failed at index 0")
+        );
+    }
+
+    #[test]
+    fn test_into_item_build_conversion_error_recorded() {
+        // All fields present but a field forces build_conversion to
+        // fail (decimals = u8::MAX overflows decimal_scale). The
+        // resulting error must be recorded and the item marked failed
+        // with no data. Pins the `Err(err)` arm inside into_item that
+        // folds a build_conversion failure into the state error.
+        let mut state = complete_state();
+        state.asset_decimals = Some(u8::MAX);
+        let item = state.into_item();
+        assert!(!item.success);
+        assert!(item.data.is_none());
+        assert!(item
+            .error
+            .as_deref()
+            .unwrap()
+            .contains("decimal scale overflow"));
+    }
+
+    #[test]
+    fn test_multicall_failure_message_includes_label_index_and_data() {
+        // The per-call failure message must interpolate the label, the
+        // exact failing index, and the return data. The batch tests only
+        // assert the label substring, so the index and return-data
+        // fields are otherwise unpinned.
+        let msg = multicall_failure(
+            "asset",
+            Failure {
+                idx: 7,
+                return_data: vec![0xde, 0xad, 0xbe, 0xef].into(),
+            },
+        );
+        assert_eq!(
+            msg,
+            "asset call failed at index 7 with return data: 0xdeadbeef"
+        );
+    }
 }
